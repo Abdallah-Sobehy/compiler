@@ -1,5 +1,15 @@
+/**
+ * @file lex.l
+ * @date March 3, 2017
+ * @author Abdallah sobehy
+ * @author Mostafa Fateen
+ * @author Ramy Alfred
+ * @author Yousra Samir
+ * @brief lex file of a compiler for a C++ like language
+ * @ref https://github.com/jengelsma/yacc-tutorial
+ */
 %{
-#include <stdio.h>
+#include "y.tab.h"
 %}
 
 DIGIT [0-9]
@@ -58,6 +68,6 @@ const   printf("TYPE_CONST ");
 
 %%
 
-main(int argc, char** argv) {
-  yylex();
-}
+int yywrap (void) {return 1;}
+
+void yyerror (char *s) {fprintf (stderr, "%s\n", s);} 
