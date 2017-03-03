@@ -9,7 +9,7 @@ if							printf("IF ");
 else						printf("ELSE ")
 while						printf("WHILE ");
 for							printf("FOR ");
-switch						printf("SWICH ");
+switch					printf("SWICH ");
 case						printf("CASE ");
 
 
@@ -45,3 +45,4 @@ char						printf("TYPE_CHR ");
 ")"							printf("CLOSE_BRACE ");
 "{"							printf("OPEN_CURLY ");
 "}"							printf("CLOSE_CURLY ");
+"//"            printf("INLINE_COMMENT ");
