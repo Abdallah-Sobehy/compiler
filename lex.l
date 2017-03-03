@@ -9,12 +9,14 @@ if							printf("IF ");
 else						printf("ELSE ")
 while						printf("WHILE ");
 for							printf("FOR ");
-switch					printf("SWICH ");
+switch						printf("SWICH ");
 case						printf("CASE ");
+do							printf("DO ");
 
 
 "&&"						printf("AND ");
 "|"							printf("OR ");
+"!"							printf("NOT ");
 "=="						printf("EQUALITY ");
 ">="						printf("GTOREQ ");
 "<="						printf("LTOREQ ");
@@ -22,7 +24,9 @@ case						printf("CASE ");
 "<"							printf("LESS ");
 "="							printf("ASSIGN ");
 "+"							printf("PLUS ");
+"++"						printf("INC ");
 "-"							printf("MINUS ");
+"--"						printf("DEC ");
 "*"							printf("MULT ");
 "/"							printf("DIVIDE ");
 "%"							printf("MOD ");
@@ -45,5 +49,6 @@ char						printf("TYPE_CHR ");
 ")"							printf("CLOSE_BRACE ");
 "{"							printf("OPEN_CURLY ");
 "}"							printf("CLOSE_CURLY ");
-";"							printf("END_STMNT ");
-"//"            printf("INLINE_COMMENT ");
+";"							printf("END_STATEMENT ");
+"//".*            			printf("INLINE_COMMENT ");
+"/*".*"/*"					printf("BLOCK_COMMENT ");
