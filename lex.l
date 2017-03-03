@@ -55,7 +55,7 @@ const   printf("TYPE_CONST ");
 \-?{DIGIT}+					        printf("NUM ");
 "'"[0-9a-zA-z]"'"			    printf("CHAR ");
 \"[0-9a-zA-Z ]+\" 			  printf("STRING ");
-[_a-zA-Z][a-zA-Z0-9]+     printf("ID");
+[_a-zA-Z][a-zA-Z0-9]*     printf("ID");
 
 
 "("				            printf("OPEN_BRACE");
@@ -70,4 +70,4 @@ const   printf("TYPE_CONST ");
 
 int yywrap (void) {return 1;}
 
-void yyerror (char *s) {fprintf (stderr, "%s\n", s);} 
+void yyerror (char *s) {fprintf (stderr, "%s\n", s);}
