@@ -10,17 +10,22 @@ Ramy Alfred ([ramyalfred] (https://github.com/ramyalfred))
 
 Yousra Samir
 
-### The Project comprises the following
+#### Running Steps
+- flex lex.l
+- yacc -d yacc.y
+- gcc lex.yy.c y.tab.c  -o compiler
+
+#### The Project comprises the following
 - [ ] Design a suitable programming language; you may use a mini version of an existing one
     - [x] Variables declaration
-    - [ ] Constants declaration.
+    - [x] Constants declaration.
     - [x] Mathematical and logical expressions.
     - [x] Assignment statement.
     - [x] If-then-else statement, while loops, repeat-until loops, for loops, switch statement.
     - [x] Block structure (nested scopes where variables may be declared at the beginning of blocks).
     - [ ] [optional] Functions
 - [ ] Design a suitable and extensible format for the symbol table.
-- [ ] Implement the lexical analyzer using Lex.
+- [x] Implement the lexical analyzer using Lex.
 - [ ] Design suitable action rules to produce the output quadruples and implement your parser using YACC.
 - [ ] Implement a proper syntax error handler.
 - [ ] Build a simple semantic analyzer
