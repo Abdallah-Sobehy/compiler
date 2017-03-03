@@ -45,4 +45,5 @@ char						printf("TYPE_CHR ");
 ")"							printf("CLOSE_BRACE ");
 "{"							printf("OPEN_CURLY ");
 "}"							printf("CLOSE_CURLY ");
+";"							printf("END_STMNT ");
 "//"            printf("INLINE_COMMENT ");
