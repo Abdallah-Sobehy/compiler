@@ -10,18 +10,30 @@
  */
 %{
 #include <stdio.h>
-#include <stdlib.h>	
+#include <stdlib.h>
+#include <string>
 int num;
 %}
 // definitions
+%union {int INTGR; string STRNG; float FLT; char CHR;}
 %start line
-%token <num> number
+%token TYPE_CONSTANT
+%token TYPE_INT
+%token TYPE_FLT
+%token TYPE_STR
+%token TYPE_CHR
+%token TYPE_CONST
+%token <STRNG> ID
+%token <INTGR> NUM
+%token <FLT> FLOATING_NUM
 %type <num> line
+/*Other type defs depend on non-terminal nodes that you are going to make*/
+
 
 // Production rules
 %%
 line: number ';' {;}
-%% 
+%%
 //Normal C-code
 int main(void)
 {
