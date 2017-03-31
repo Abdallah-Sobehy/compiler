@@ -12,7 +12,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-int num;
 int exitFlag=0;
 int value[52];
 int declared[52];
@@ -29,7 +28,8 @@ int type[52];
 %token <CHR> CHAR_VALUE
 %token <STRNG> STRING_VALUE
 %token exit_command
-%type <num> statement
+%type <INTGR> math_expr
+%type <INTGR> math_element
 /*Other type defs depend on non-terminal nodes that you are going to make*/
 
 // Production rules
@@ -37,11 +37,42 @@ int type[52];
 
 statement	: variable_declaration_statement ';' {;}
 			| constant_declaration_statement ';' {;}
+			| math_expr ';' {;}
 			| exit_command ';' {exit(EXIT_SUCCESS);}
 			| statement variable_declaration_statement ';' {;}
 			| statement constant_declaration_statement ';' {;}
+			| statement math_expr ';' {;}
 			| statement exit_command ';' {exit(EXIT_SUCCESS);}
 			;
+//TODO: apply priority for * and divide
+math_expr	: math_element					{printf("Result element: %d. ",$$);}
+			| math_expr '+' math_element    {$$ = $1 + $3; 
+											printf("Result +: %d. ",$$);
+											}
+														| math_expr '*' math_element    {$$ = $1 * $3; 
+											printf("Result * : %d. ",$$);}	
+			| math_expr '-' math_element    {$$ = $1 - $3; 
+											printf("Result - : %d. ",$$);}	
+
+			| math_expr '/' math_element    {$$ = $1 / $3; 
+											printf("Result / : %d. ",$$);}
+			;
+
+//TODO: ID type check 
+math_element:	NUM 	  				{$$=$1;}
+				| ID 					{	if(declared[$1] == 1){
+												if(valueSet[$1] == 1){
+													$$=value[$1];
+												}
+												else{
+												printf("Error: %c is not set", $1+'a');
+												}
+											}
+											else{
+											printf("Error: %c is not declared", $1+'a');
+											}
+										}
+				;	
 
 variable_declaration_statement:	
 	TYPE_INT ID 	{ 	if(declared[$2] == 0) {
