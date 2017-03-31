@@ -29,6 +29,7 @@ int type[52];
 %token <STRNG> STRING_VALUE
 %token exit_command
 %type <INTGR> math_expr
+%type <INTGR> high_priority_expr
 %type <INTGR> math_element
 /*Other type defs depend on non-terminal nodes that you are going to make*/
 
@@ -44,34 +45,39 @@ statement	: variable_declaration_statement ';' {;}
 			| statement math_expr ';' {;}
 			| statement exit_command ';' {exit(EXIT_SUCCESS);}
 			;
-//TODO: apply priority for * and divide
-math_expr	: math_element					{printf("Result element: %d. ",$$);}
-			| math_expr '+' math_element    {$$ = $1 + $3; 
+
+math_expr	: math_expr '+' high_priority_expr    {$$ = $1 + $3; 
 											printf("Result +: %d. ",$$);
 											}
-														| math_expr '*' math_element    {$$ = $1 * $3; 
-											printf("Result * : %d. ",$$);}	
-			| math_expr '-' math_element    {$$ = $1 - $3; 
-											printf("Result - : %d. ",$$);}	
-
-			| math_expr '/' math_element    {$$ = $1 / $3; 
-											printf("Result / : %d. ",$$);}
+			| math_expr '-' high_priority_expr    {$$ = $1 - $3; 
+											printf("Result - : %d. ",$$);}
+			|high_priority_expr				{$$=$1;}
 			;
 
+high_priority_expr:		high_priority_expr '*' math_element		{$$ = $1 * $3; 
+																printf("Result * : %d. ",$$);}
+						|high_priority_expr '/' math_element	{$$ = $1 / $3; 
+																printf("Result / : %d. ",$$);}
+						|math_element							{$$=$1;
+																printf("Result element: %d. ",$$);}
+						;
+
 //TODO: ID type check 
-math_element:	NUM 	  				{$$=$1;}
-				| ID 					{	if(declared[$1] == 1){
-												if(valueSet[$1] == 1){
-													$$=value[$1];
+math_element:	NUM			  				{$$=$1;}
+				| FLOATING_NUM				{$$=$1;}
+				| ID 						{	if(declared[$1] == 1){
+													if(valueSet[$1] == 1){
+														$$=value[$1];
+													}
+													else{
+													printf("Error: %c is not set", $1+'a');
+													}
 												}
 												else{
-												printf("Error: %c is not set", $1+'a');
+												printf("Error: %c is not declared", $1+'a');
 												}
 											}
-											else{
-											printf("Error: %c is not declared", $1+'a');
-											}
-										}
+				| '('math_expr')'			{$$=$2;}
 				;	
 
 variable_declaration_statement:	
