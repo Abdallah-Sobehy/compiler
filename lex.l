@@ -1,4 +1,4 @@
-return/**
+/**
  * @file lex.l
  * @date March 3, 2017
  * @author Abdallah sobehy
@@ -13,27 +13,19 @@ return/**
 %}
 
 DIGIT [0-9]
-ALPHA [a-zA-Z]
+ALPHA [a-z]
+ALPHA_CAPITAL [A-Z]
 ALNUM [0-9a-zA-Z]
 
 %%
-if      printf("IF ");
+if      printf("%s", yytext);
 else    printf("ELSE ");
-while	  printf("WHILE ");
+while	printf("WHILE ");
 for     printf("FOR ");
 switch  printf("SWICH ");
 case    printf("CASE ");
-do			printf("DO ");
+do		printf("DO ");
 
-/*
-Returning actual symbol rather than description(easier)
-"+"			printf("PLUS ");
-"-"			printf("MINUS ");
-"*"			printf("MULT ");
-"="			printf("ASSIGN ");
-"/"			printf("DIVIDE ");
-"%"			printf("MOD ");
-";"		  printf("END_STATEMENT ");*/
 [*+-/=%;]  {return yytext[0];}
 
 "&&"		printf("AND ");
@@ -48,31 +40,35 @@ Returning actual symbol rather than description(easier)
 "--"		printf("DEC ");
 
 
-
 "int"			return TYPE_INT;
-"float"		return TYPE_FLT;
-"string"  return TYPE_STR;
-"char"		return TYPE_CHR;
-"const"   return TYPE_CONST;
+"float"			return TYPE_FLT;
+"string"  		return TYPE_STR;
+"char"			return TYPE_CHR;
+"const"   		return TYPE_CONST;
+"exit"			return exit_command;
 
-/*stof should be string to floating(Needs revision when running)*/
-\-?{DIGIT}*"."{DIGIT}+      {yylval.FLT = stof(yytext); return FLOATING_NUM;}
-\-?{DIGIT}+					        {yylval.INTGR = atoi(yytext); return NUM;}
-/*Literal string and char not needed in this phase*/
-"'"[0-9a-zA-z]"'"			      printf("CHAR ");
-\"[0-9a-zA-Z ]+\" 			    printf("STRING ");
-[_a-zA-Z][a-zA-Z0-9]*       {yylval.STRNG = yytext; return ID;}
-
+\-?{DIGIT}*"."{DIGIT}+      {	yylval.FLT = atof(yytext); 
+								return FLOATING_NUM;}
+\-?{DIGIT}+				 	{	yylval.INTGR = atoi(yytext); 
+								return NUM;}
+\'.\'						{ 	yylval.CHR = yytext;
+								return(CHAR_VALUE); }
+{ALPHA}						{	yylval.INTGR = *yytext-'a';
+								return(ID);}
+{ALPHA_CAPITAL}				{	yylval.INTGR = *yytext-'A'+26;
+								return(ID);}								
+\"[0-9a-zA-Z ]+\" 			{ 	yylval.STRNG = yytext;
+								return(STRING_VALUE); }
 
 "("				            printf("OPEN_BRACE");
-")"							      printf("CLOSE_BRACE ");
-"{"							      printf("OPEN_CURLY ");
-"}"							      printf("CLOSE_CURLY ");
-"//".*                printf("INLINE_COMMENT ");
-"/*"(.|\n)*"*/"     printf("BLOCK_COMMENT ");
+")"							printf("CLOSE_BRACE ");
+"{"							printf("OPEN_CURLY ");
+"}"							printf("CLOSE_CURLY ");
+"//".*                		printf("INLINE_COMMENT ");
+"/*"(.|\n)*"*/"     		printf("BLOCK_COMMENT ");
 
 %%
 
-int yywrap (void) {return 1;}
 
-void yyerror (char *s) {fprintf (stderr, "%s\n", s);}
+
+
