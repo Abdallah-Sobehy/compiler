@@ -46,51 +46,64 @@ statement	: variable_declaration_statement ';' {;}
 			| statement exit_command ';' {exit(EXIT_SUCCESS);}
 			;
 
-math_expr	: math_expr '+' high_priority_expr    {$$ = $1 + $3; 
-											printf("Result +: %d. ",$$);
-											}
-			| math_expr '-' high_priority_expr    {$$ = $1 - $3; 
-											printf("Result - : %d. ",$$);}
-			|high_priority_expr				{$$=$1;}
+math_expr	: math_expr '+' high_priority_expr    {
+																									$$ = $1 + $3;
+																									/*printf("Result +: %d. ",$$);*/
+																									printf("add\n");
+																								}
+			| math_expr '-' high_priority_expr    		{
+																									$$ = $1 - $3;
+																									/*printf("Result - : %d. ",$$);*/
+																									printf("sub\n");
+																								}
+			|high_priority_expr												{	$$=$1; }
 			;
 
-high_priority_expr:		high_priority_expr '*' math_element		{$$ = $1 * $3; 
-																printf("Result * : %d. ",$$);}
-						|high_priority_expr '/' math_element	{$$ = $1 / $3; 
-																printf("Result / : %d. ",$$);}
-						|math_element							{$$=$1;
-																printf("Result element: %d. ",$$);}
+high_priority_expr:		high_priority_expr '*' math_element		{
+																															$$ = $1 * $3;
+																															/*printf("Result * : %d. ",$$);*/
+																															printf("Push %d\nmul\n",$3);
+																														}
+						|high_priority_expr '/' math_element						{
+																															$$ = $1 / $3;
+																															/*printf("Result / : %d. ",$$);*/
+																															printf("Push %d\ndiv\n", $3);
+																														}
+						|math_element																		{
+																															$$=$1;
+																															/*printf("Result element: %d. ",$$);*/
+																															printf("Push %d\n",$$);
+																														}
 						;
 
-//TODO: ID type check 
+//TODO: ID type check
 math_element:	NUM			  				{$$=$1;}
-				| FLOATING_NUM				{$$=$1;}
-				| ID 						{	if(declared[$1] == 1){
-													if(valueSet[$1] == 1){
-														$$=value[$1];
-													}
-													else{
-													printf("Error: %c is not set", $1+'a');
-													}
-												}
-												else{
-												printf("Error: %c is not declared", $1+'a');
-												}
-											}
-				| '('math_expr')'			{$$=$2;}
-				;	
+				| FLOATING_NUM					{$$=$1;}
+				| ID 										{
+																	if(declared[$1] == 1){
+																		if(valueSet[$1] == 1){
+																			$$=value[$1];
+																		} else {
+																			printf("Error: %c is not set", $1+'a');
+																		}
+																	} else {
+																		printf("Error: %c is not declared", $1+'a');
+																	}
+																}
+				| '('math_expr')'				{$$=$2;}
+				;
 
-variable_declaration_statement:	
+variable_declaration_statement:
 	TYPE_INT ID 	{ 	if(declared[$2] == 0) {
-							value[$2] = 0; 
+							value[$2] = 0;
 							declared[$2] = 1;
 							type[$2] = 1;
 							valueSet[$2] = 0;
-							printf("Debug int\n");
+							/*printf("Debug int\n");
 							printf("var name %c \n",$2+'a');
 							printf("index %d \n",$2);
-							printf("declared %d \n",declared[$2]);
-						} else { 
+							printf("declared %d \n",declared[$2]);*/
+						} else {
 							printf("Syntax Error : %c is an already declared variable\n", $2 + 'a');
 						}
 					}
@@ -98,7 +111,7 @@ variable_declaration_statement:
 							declared[$2] = 1;
 							type[$2] = 2;
 							valueSet[$2] = 0;
-						} else { 
+						} else {
 							printf("Syntax Error : %c is an already declared variable\n", $2 + 'a');
 						}
 					}
@@ -106,7 +119,7 @@ variable_declaration_statement:
 							declared[$2] = 1;
 							type[$2] = 3;
 							valueSet[$2] = 0;
-						} else { 
+						} else {
 							printf("Syntax Error : %c is an already declared variable\n", $2 + 'a');
 						}
 					}
@@ -114,98 +127,115 @@ variable_declaration_statement:
 							declared[$2] = 1;
 							type[$2] = 4;
 							valueSet[$2] = 0;
-						} else { 
+						} else {
 							printf("Syntax Error : %c is an already declared variable\n", $2 + 'a');
 						}
 					}
 	|TYPE_INT ID '=' NUM	{ 	if(declared[$2] == 0) {
-									value[$2] = $4; 
+									value[$2] = $4;
 									declared[$2] = 1;
 									type[$2] = 1;
 									valueSet[$2] = 1;
-									printf("Debug int assign\n");
+									/*printf("Debug int assign\n");
 									printf("var name %c \n",$2+'a');
 									printf("index %d \n",$2);
-									printf("value %d \n",value[$2]);
-								} else { 
+									printf("value %d \n",value[$2]);*/
+									printf("Push %d\nPop %c", value[$2], $2+'a');
+								} else {
 									printf("Syntax Error : %c is an already declared variable\n", $2 + 'a');
 								}
 							}
 	|TYPE_FLT ID '=' FLOATING_NUM	{ 	if(declared[$2] == 0) {
-											value[$2] = $4; 
+											value[$2] = $4;
 											declared[$2] = 1;
 											type[$2] = 2;
 											valueSet[$2] = 1;
-										} else { 
+											printf("Push %f\nPop %c", value[$2], $2+'a');
+
+										} else {
 											printf("Syntax Error : %c is an already declared variable\n", $2 + 'a');
 										}
 									}
 	|TYPE_CHR ID '=' CHAR_VALUE		{ 	if(declared[$2] == 0) {
-											value[$2] = $4; 
+											value[$2] = $4;
 											declared[$2] = 1;
 											type[$2] = 3;
 											valueSet[$2] = 1;
-									} else { 
+											printf("Push %c\nPop %c", value[$2]+'a', $2+'a');
+
+									} else {
 											printf("Syntax Error : %c is an already declared variable\n", $2 + 'a');
 										}
 									}
 	|TYPE_STR ID '=' STRING_VALUE	{ 	if(declared[$2] == 0) {
-											value[$2] = $4; 
+											value[$2] = $4;
 											declared[$2] = 1;
 											type[$2] = 4;
 											valueSet[$2] = 1;
-										} else { 
+										} else {
 											printf("Syntax Error : %c is an already declared variable\n", $2 + 'a');
 										}
 									}
 ;
 constant_declaration_statement:
-	TYPE_CONST TYPE_INT ID '=' NUM					{ 	if(declared[$3] == 0) {
-															value[$3] = $5; 
-															declared[$3] = 1;
-															type[$3] = 1;
-															valueSet[$3] = 1;
-														} else { 
-															printf("Syntax Error : %c is an already declared variable\n", $3 + 'a');
-														}
-													}
-	| TYPE_CONST TYPE_FLT ID '=' FLOATING_NUM		{ 	if(declared[$3] == 0) {
-															value[$3] = $5; 
-															declared[$3] = 1;
-															type[$3] = 2;
-															valueSet[$3] = 1;
-														} else { 
-															printf("Syntax Error : %c is an already declared variable\n", $3 + 'a');
-														}
-													}
-	| TYPE_CONST TYPE_CHR ID '=' CHAR_VALUE			{ 	if(declared[$3] == 0) {
-															value[$3] = $5; 
-															declared[$3] = 1;
-															type[$3] = 3;
-															valueSet[$3] = 1;
-														} else { 
-															printf("Syntax Error : %c is an already declared variable\n", $3 + 'a');
-														}
-													}
-	| TYPE_CONST TYPE_STR ID '=' STRING_VALUE		{ 	if(declared[$3] == 0) {
-															value[$3] = $5; 
-															declared[$3] = 1;
-															type[$3] = 4;
-															valueSet[$3] = 1;
-														} else { 
-															printf("Syntax Error : %c is an already declared variable\n", $3 + 'a');
-														}
-													}
+	TYPE_CONST TYPE_INT ID '=' NUM						{
+																							if(declared[$3] == 0) {
+																								value[$3] = $5;
+																								declared[$3] = 1;
+																								type[$3] = 1;
+																								valueSet[$3] = 1;
+																								printf("Push %d\nPop %c", value[$3], $3+'a');
+
+																							} else {
+																								printf("Syntax Error : %c is an already declared variable\n", $3 + 'a');
+																							}
+																						}
+
+	| TYPE_CONST TYPE_FLT ID '=' FLOATING_NUM		{
+																								if(declared[$3] == 0) {
+																									value[$3] = $5;
+																									declared[$3] = 1;
+																									type[$3] = 2;
+																									valueSet[$3] = 1;
+																									printf("Push %f\nPop %c", value[$3], $3+'a');
+																								} else {
+																									printf("Syntax Error : %c is an already declared variable\n", $3 + 'a');
+																								}
+																							}
+
+	| TYPE_CONST TYPE_CHR ID '=' CHAR_VALUE			{
+																								if(declared[$3] == 0) {
+																									value[$3] = $5;
+																									declared[$3] = 1;
+																									type[$3] = 3;
+																									valueSet[$3] = 1;
+																									printf("Push %c\nPop %c", value[$3], $3+'a');
+
+																								} else {
+																									printf("Syntax Error : %c is an already declared variable\n", $3 + 'a');
+																								}
+																							}
+
+	| TYPE_CONST TYPE_STR ID '=' STRING_VALUE		{
+																								if(declared[$3] == 0) {
+																									value[$3] = $5;
+																									declared[$3] = 1;
+																									type[$3] = 4;
+																									valueSet[$3] = 1;
+																								} else {
+																									printf("Syntax Error : %c is an already declared variable\n", $3 + 'a');
+																								}
+																							}
 ;
 
-					
+
 %%
 //Normal C-code
 int main(void)
 {
 	return yyparse();
-	
-	
+
+
 }
 int yyerror(char* s)
 {

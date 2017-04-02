@@ -1,2 +1,7 @@
 lex.yy.c
 a.out
+compiler
+lex.o
+y.tab.h
+yacc.c
+yacc.o
