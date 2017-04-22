@@ -26,7 +26,7 @@ switch  printf("SWICH ");
 case    printf("CASE ");
 do		printf("DO ");
 
-[*+-/=%;]  {return yytext[0];}
+[*+-/=%;~&|^]  {return yytext[0];}
 
 "&&"		printf("AND ");
 "|"			printf("OR ");

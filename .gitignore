@@ -5,3 +5,5 @@ lex.o
 y.tab.h
 yacc.c
 yacc.o
+
+\.DS_Store
