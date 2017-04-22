@@ -14,8 +14,11 @@
 #include <string.h>
 int exitFlag=0;
 int value[52];
+int next_reg = 1; // The register number to be written in the next instruction
+int is_first = 1; // check if is the first operation for consistent register counts
+int after_hp = 0; // a high priority operation is done
 int declared[52];
-int valueSet[52];
+int variabled_initialized[52];
 int type[52];
 %}
 // definitions
@@ -31,6 +34,8 @@ int type[52];
 %type <INTGR> math_expr
 %type <INTGR> high_priority_expr
 %type <INTGR> math_element
+%left '+' '-'
+%left '*' '/'
 /*Other type defs depend on non-terminal nodes that you are going to make*/
 
 // Production rules
@@ -49,40 +54,79 @@ statement	: variable_declaration_statement ';' {;}
 math_expr	: math_expr '+' high_priority_expr    {
 																									$$ = $1 + $3;
 																									/*printf("Result +: %d. ",$$);*/
-																									printf("add\n");
+																									if(is_first){
+																										printf("ADD R0,R%d,R%d\n",--next_reg ,--next_reg );
+																										is_first=0;
+																									}
+																									else{
+																										if(after_hp){
+																											printf("ADD R0,R%d,R4\n",--next_reg);
+																											after_hp = 0;
+																										}
+																										else{
+																											printf("ADD R0,R%d,R0\n",--next_reg);
+																										}
+																										}
 																								}
 			| math_expr '-' high_priority_expr    		{
 																									$$ = $1 - $3;
 																									/*printf("Result - : %d. ",$$);*/
-																									printf("sub\n");
+																									if(is_first){
+																										printf("SUB R0,R%d,R%d\n",--next_reg ,--next_reg );
+																										is_first = 0;
+																									}
+																									else{
+																										if(after_hp){
+																											printf("SUB R0,R%d,R4\n",--next_reg);
+																											after_hp = 0;
+																										}
+																										else{
+																											printf("SUB R0,R%d,R0\n",--next_reg);
+																										}
+																										}
 																								}
-			|high_priority_expr												{	$$=$1; }
+			|high_priority_expr												{	$$=$1;}
 			;
 
 high_priority_expr:		high_priority_expr '*' math_element		{
 																															$$ = $1 * $3;
 																															/*printf("Result * : %d. ",$$);*/
-																															printf("Push %d\nmul\n",$3);
+																															if(!after_hp){
+																																printf("MUL R4,R%d,R%d\n",--next_reg ,--next_reg );
+																																after_hp = 1;
+																																is_first = 0;
+																															}
+																															else{
+																																printf("MUL R4,R%d,R4\n",--next_reg );
+																															}
+
 																														}
 						|high_priority_expr '/' math_element						{
 																															$$ = $1 / $3;
-																															/*printf("Result / : %d. ",$$);*/
-																															printf("Push %d\ndiv\n", $3);
+																															if(!after_hp){
+																																printf("DIV R4,R%d,R%d\n",--next_reg ,--next_reg );
+																																after_hp = 1;
+																																is_first = 0;
+																															}
+																															else{
+																																printf("DIV R4,R%d,R4\n",--next_reg );
+																															}
 																														}
 						|math_element																		{
 																															$$=$1;
-																															/*printf("Result element: %d. ",$$);*/
-																															printf("Push %d\n",$$);
 																														}
 						;
 
 //TODO: ID type check
-math_element:	NUM			  				{$$=$1;}
-				| FLOATING_NUM					{$$=$1;}
+math_element:	NUM			  				{$$=$1;
+																printf("MOV R%d, %d\n",next_reg++ ,$1);}
+				| FLOATING_NUM					{$$=$1;
+																printf("MOV R%d, %f\n",next_reg++,$1);}
 				| ID 										{
 																	if(declared[$1] == 1){
-																		if(valueSet[$1] == 1){
+																		if(variabled_initialized[$1] == 1){
 																			$$=value[$1];
+																			printf("MOV R%d, %c\n",next_reg++,$1+'a');
 																		} else {
 																			printf("Error: %c is not set", $1+'a');
 																		}
@@ -98,11 +142,7 @@ variable_declaration_statement:
 							value[$2] = 0;
 							declared[$2] = 1;
 							type[$2] = 1;
-							valueSet[$2] = 0;
-							/*printf("Debug int\n");
-							printf("var name %c \n",$2+'a');
-							printf("index %d \n",$2);
-							printf("declared %d \n",declared[$2]);*/
+							variabled_initialized[$2] = 0;
 						} else {
 							printf("Syntax Error : %c is an already declared variable\n", $2 + 'a');
 						}
@@ -110,7 +150,7 @@ variable_declaration_statement:
 	|TYPE_FLT ID	{ 	if(declared[$2] == 0) {
 							declared[$2] = 1;
 							type[$2] = 2;
-							valueSet[$2] = 0;
+							variabled_initialized[$2] = 0;
 						} else {
 							printf("Syntax Error : %c is an already declared variable\n", $2 + 'a');
 						}
@@ -118,7 +158,7 @@ variable_declaration_statement:
 	|TYPE_CHR ID	{ 	if(declared[$2] == 0) {
 							declared[$2] = 1;
 							type[$2] = 3;
-							valueSet[$2] = 0;
+							variabled_initialized[$2] = 0;
 						} else {
 							printf("Syntax Error : %c is an already declared variable\n", $2 + 'a');
 						}
@@ -126,32 +166,35 @@ variable_declaration_statement:
 	|TYPE_STR ID	{ 	if(declared[$2] == 0) {
 							declared[$2] = 1;
 							type[$2] = 4;
-							valueSet[$2] = 0;
+							variabled_initialized[$2] = 0;
 						} else {
 							printf("Syntax Error : %c is an already declared variable\n", $2 + 'a');
 						}
 					}
-	|TYPE_INT ID '=' NUM	{ 	if(declared[$2] == 0) {
+	|TYPE_INT ID '=' math_expr	{ 	if(declared[$2] == 0) {
 									value[$2] = $4;
 									declared[$2] = 1;
 									type[$2] = 1;
-									valueSet[$2] = 1;
-									/*printf("Debug int assign\n");
-									printf("var name %c \n",$2+'a');
-									printf("index %d \n",$2);
-									printf("value %d \n",value[$2]);*/
-									printf("Push %d\nPop %c", value[$2], $2+'a');
+									variabled_initialized[$2] = 1;
+									if(after_hp)
+										printf("MOV %c,R4\n",$2+'a');
+									else
+										printf("MOV %c,R0\n",$2+'a');
+									//printf("Push %d\nPop %c", value[$2], $2+'a');
 								} else {
 									printf("Syntax Error : %c is an already declared variable\n", $2 + 'a');
 								}
 							}
-	|TYPE_FLT ID '=' FLOATING_NUM	{ 	if(declared[$2] == 0) {
+	|TYPE_FLT ID '=' math_expr	{ 	if(declared[$2] == 0) {
 											value[$2] = $4;
 											declared[$2] = 1;
 											type[$2] = 2;
-											valueSet[$2] = 1;
-											printf("Push %f\nPop %c", value[$2], $2+'a');
-
+											variabled_initialized[$2] = 1;
+											//printf("Push %f\nPop %c", value[$2], $2+'a');
+											if(after_hp)
+												printf("MOV %c,R4\n",$2+'a');
+											else
+												printf("MOV %c,R0\n",$2+'a');
 										} else {
 											printf("Syntax Error : %c is an already declared variable\n", $2 + 'a');
 										}
@@ -160,9 +203,9 @@ variable_declaration_statement:
 											value[$2] = $4;
 											declared[$2] = 1;
 											type[$2] = 3;
-											valueSet[$2] = 1;
-											printf("Push %c\nPop %c", value[$2]+'a', $2+'a');
-
+											variabled_initialized[$2] = 1;
+											//printf("Push %c\nPop %c", value[$2]+'a', $2+'a');
+											printf("MOV %c,'%c'\n",$2+'a',$4+'a');
 									} else {
 											printf("Syntax Error : %c is an already declared variable\n", $2 + 'a');
 										}
@@ -171,7 +214,8 @@ variable_declaration_statement:
 											value[$2] = $4;
 											declared[$2] = 1;
 											type[$2] = 4;
-											valueSet[$2] = 1;
+											variabled_initialized[$2] = 1;
+											printf("MOV %c,%s\n",$2+'a',$4);
 										} else {
 											printf("Syntax Error : %c is an already declared variable\n", $2 + 'a');
 										}
@@ -183,7 +227,7 @@ constant_declaration_statement:
 																								value[$3] = $5;
 																								declared[$3] = 1;
 																								type[$3] = 1;
-																								valueSet[$3] = 1;
+																								variabled_initialized[$3] = 1;
 																								printf("Push %d\nPop %c", value[$3], $3+'a');
 
 																							} else {
@@ -196,7 +240,7 @@ constant_declaration_statement:
 																									value[$3] = $5;
 																									declared[$3] = 1;
 																									type[$3] = 2;
-																									valueSet[$3] = 1;
+																									variabled_initialized[$3] = 1;
 																									printf("Push %f\nPop %c", value[$3], $3+'a');
 																								} else {
 																									printf("Syntax Error : %c is an already declared variable\n", $3 + 'a');
@@ -208,7 +252,7 @@ constant_declaration_statement:
 																									value[$3] = $5;
 																									declared[$3] = 1;
 																									type[$3] = 3;
-																									valueSet[$3] = 1;
+																									variabled_initialized[$3] = 1;
 																									printf("Push %c\nPop %c", value[$3], $3+'a');
 
 																								} else {
@@ -221,7 +265,7 @@ constant_declaration_statement:
 																									value[$3] = $5;
 																									declared[$3] = 1;
 																									type[$3] = 4;
-																									valueSet[$3] = 1;
+																									variabled_initialized[$3] = 1;
 																								} else {
 																									printf("Syntax Error : %c is an already declared variable\n", $3 + 'a');
 																								}

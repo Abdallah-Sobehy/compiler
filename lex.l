@@ -47,16 +47,18 @@ do		printf("DO ");
 "const"   		return TYPE_CONST;
 "exit"			return exit_command;
 
-\-?{DIGIT}*"."{DIGIT}+      {	yylval.FLT = atof(yytext); 
+[ \t\n]+        ;       /* ignore whitespace */
+
+\-?{DIGIT}*"."{DIGIT}+      {	yylval.FLT = atof(yytext);
 								return FLOATING_NUM;}
-\-?{DIGIT}+				 	{	yylval.INTGR = atoi(yytext); 
+\-?{DIGIT}+				 	{	yylval.INTGR = atoi(yytext);
 								return NUM;}
-\'.\'						{ 	yylval.CHR = yytext;
+\'.\'						{ 	yylval.INTGR = yytext[1]-'a';
 								return(CHAR_VALUE); }
 {ALPHA}						{	yylval.INTGR = *yytext-'a';
 								return(ID);}
 {ALPHA_CAPITAL}				{	yylval.INTGR = *yytext-'A'+26;
-								return(ID);}								
+								return(ID);}
 \"[0-9a-zA-Z ]+\" 			{ 	yylval.STRNG = yytext;
 								return(STRING_VALUE); }
 
@@ -68,7 +70,3 @@ do		printf("DO ");
 "/*"(.|\n)*"*/"     		printf("BLOCK_COMMENT ");
 
 %%
-
-
-
-
