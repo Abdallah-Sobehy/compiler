@@ -26,6 +26,8 @@ int type[52];
 // definitions
 %union {int INTGR; char * STRNG; float FLT; char CHR;}
 %start statement
+%token IF ELSE ELSEIF FOR WHILE SWITCH CASE DO BREAK
+%token AND OR NOT EQ GTE LTE GT LT INC DEC
 %token TYPE_INT TYPE_FLT TYPE_STR TYPE_CHR TYPE_CONST
 %token <INTGR> ID
 %token <INTGR> NUM

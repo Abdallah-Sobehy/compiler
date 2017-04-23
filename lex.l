@@ -18,26 +18,26 @@ ALPHA_CAPITAL [A-Z]
 ALNUM [0-9a-zA-Z]
 
 %%
-if      printf("%s", yytext);
-else    printf("ELSE ");
-while	printf("WHILE ");
-for     printf("FOR ");
-switch  printf("SWICH ");
-case    printf("CASE ");
-do		printf("DO ");
+"if"      return (IF);
+"else"    return (ELSE);
+"while"	return(WHILE);
+"for"     return(FOR);
+"switch"  return(SWITCH);
+"case"    return(CASE);
+"do"		return(DO);
 
-[*+-/=%;~&|^]  {return yytext[0];}
+[*+-/=%;~&|^(){}]  {return yytext[0];}
 
-"&&"		printf("AND ");
-"|"			printf("OR ");
-"!"			printf("NOT ");
-"=="		printf("EQUALITY ");
-">="		printf("GTOREQ ");
-"<="		printf("LTOREQ ");
-">"			printf("GREATER ");
-"<"			printf("LESS ");
-"++"		printf("INC ");
-"--"		printf("DEC ");
+"&&"		return (AND);
+"||"		return(OR);
+"!"			return(NOT);
+"=="		return(EQ);
+">="		return(GTE);
+"<="		return(LTE);
+">"			return(GT);
+"<"			return(LT);
+"++"		return(INC);
+"--"		return(DEC);
 
 
 "int"			return TYPE_INT;
@@ -62,11 +62,7 @@ do		printf("DO ");
 \"[0-9a-zA-Z ]+\" 			{ 	yylval.STRNG = yytext;
 								return(STRING_VALUE); }
 
-"("				            printf("OPEN_BRACE");
-")"							printf("CLOSE_BRACE ");
-"{"							printf("OPEN_CURLY ");
-"}"							printf("CLOSE_CURLY ");
-"//".*                		printf("INLINE_COMMENT ");
-"/*"(.|\n)*"*/"     		printf("BLOCK_COMMENT ");
+"//".*                	;
+"/*"(.|\n)*"*/"     		;
 
 %%
