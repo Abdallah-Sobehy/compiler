@@ -14,14 +14,18 @@
 #include <string.h>
 
 void reset();
+void declare_initalize(int id, int type_);
+void declare_only(int id, int type_);
 int exitFlag=0;
-int value[52];
 int next_reg = 1; // The register number to be written in the next instruction
 int is_first = 1; // check if is the first operation for consistent register counts
 int after_hp = 0; // a high priority operation is done
-int declared[52];
-int variabled_initialized[52];
-int type[52];
+int declared[26];
+int is_constant[26];// for each variable store 1 if it constant
+int scope[26]; // a scope number for each variable
+int current_scope = 0;
+int variabled_initialized[26];
+int type[26];
 %}
 // definitions
 %union {int INTGR; char * STRNG; float FLT; char CHR;}
@@ -48,14 +52,30 @@ int type[52];
 statement	: variable_declaration_statement ';' {reset();}
 			| assign_statement ';' {reset();}
 			| constant_declaration_statement ';' {reset();}
+			| conditional_statement {reset();}
 			| math_expr ';' {reset();}
 			| exit_command ';' {exit(EXIT_SUCCESS);}
 			| statement variable_declaration_statement ';' {reset();}
 			| statement assign_statement ';' {reset();}
 			| statement constant_declaration_statement ';' {reset();}
+			| statement conditional_statement {reset();}
 			| statement math_expr ';' {reset();}
 			| statement exit_command ';' {exit(EXIT_SUCCESS);}
 			;
+
+conditional_statement :
+			if_statement {;}
+			/*| for_loop {;}
+			| while_loop {;}
+			| do_while {;}*/
+			;
+
+if_statement :
+			IF '(' condition ')''{' statement '}' {;}
+			| IF '(' condition ')''{' statement '}' ELSE '{' statement '}' {;}
+			| IF '(' condition ')''{' statement '}' ELSE if_statement {;}
+
+condition :
 
 math_expr	:
  			'('math_expr')'											{$$=$2;}
@@ -191,20 +211,19 @@ math_element:	NUM			  				{$$=$1;
 				| ID 										{
 																	if(declared[$1] == 1){
 																		if(variabled_initialized[$1] == 1){
-																			$$=value[$1];
+																			$$=$1;
 																			printf("MOV R%d, %c\n",next_reg++,$1+'a');
 																		} else {
-																			printf("Error: %c is not set", $1+'a');
+																			printf("Error: %c is not set\n", $1+'a');
 																		}
 																	} else {
-																		printf("Error: %c is not declared", $1+'a');
+																		printf("Error: %c is not declared\n", $1+'a');
 																	}
 																}
 				| '('math_expr')'				{$$=$2;}
 				;
 assign_statement:
 	ID '=' math_expr	{	if(declared[$1] == 1) {
-												value[$1] = $3;
 												variabled_initialized[$1] = 1;
 												if(after_hp)
 													printf("MOV %c,R4\n",$1+'a');
@@ -217,102 +236,17 @@ assign_statement:
 										}
 										;
 variable_declaration_statement:
-	TYPE_INT ID 	{ 	if(declared[$2] == 0) {
-							value[$2] = 0;
-							declared[$2] = 1;
-							type[$2] = 1;
-							variabled_initialized[$2] = 0;
-						} else {
-							printf("Syntax Error : %c is an already declared variable\n", $2 + 'a');
-						}
-					}
-	|TYPE_FLT ID	{ 	if(declared[$2] == 0) {
-							declared[$2] = 1;
-							type[$2] = 2;
-							variabled_initialized[$2] = 0;
-						} else {
-							printf("Syntax Error : %c is an already declared variable\n", $2 + 'a');
-						}
-					}
-	|TYPE_CHR ID	{ 	if(declared[$2] == 0) {
-							declared[$2] = 1;
-							type[$2] = 3;
-							variabled_initialized[$2] = 0;
-						} else {
-							printf("Syntax Error : %c is an already declared variable\n", $2 + 'a');
-						}
-					}
-	|TYPE_STR ID	{ 	if(declared[$2] == 0) {
-							declared[$2] = 1;
-							type[$2] = 4;
-							variabled_initialized[$2] = 0;
-						} else {
-							printf("Syntax Error : %c is an already declared variable\n", $2 + 'a');
-						}
-					}
-	|TYPE_INT ID '=' math_expr	{ 	if(declared[$2] == 0) {
-									value[$2] = $4;
-									declared[$2] = 1;
-									type[$2] = 1;
-									variabled_initialized[$2] = 1;
-									if(is_first){
-										printf("MOV %c,R%d\n",$2+'a',--next_reg);
-									}else{
-										if(after_hp)
-											printf("MOV %c,R4\n",$2+'a');
-										else
-											printf("MOV %c,R0\n",$2+'a');
-										}
-									//printf("Push %d\nPop %c", value[$2], $2+'a');
-								} else {
-									printf("Syntax Error : %c is an already declared variable\n", $2 + 'a');
-								}
-							}
-	|TYPE_FLT ID '=' math_expr	{ 	if(declared[$2] == 0) {
-											value[$2] = $4;
-											declared[$2] = 1;
-											type[$2] = 2;
-											variabled_initialized[$2] = 1;
-											//printf("Push %f\nPop %c", value[$2], $2+'a');
-											if(is_first){
-												printf("MOV %c,R%d\n",$2+'a',--next_reg);
-											}else{
-												if(after_hp)
-													printf("MOV %c,R4\n",$2+'a');
-												else
-													printf("MOV %c,R0\n",$2+'a');
-												}
-										} else {
-											printf("Syntax Error : %c is an already declared variable\n", $2 + 'a');
-										}
-									}
-	|TYPE_CHR ID '=' CHAR_VALUE		{ 	if(declared[$2] == 0) {
-											value[$2] = $4;
-											declared[$2] = 1;
-											type[$2] = 3;
-											variabled_initialized[$2] = 1;
-											//printf("Push %c\nPop %c", value[$2]+'a', $2+'a');
-											printf("MOV %c,'%c'\n",$2+'a',$4+'a');
-									} else {
-											printf("Syntax Error : %c is an already declared variable\n", $2 + 'a');
-										}
-									}
-	|TYPE_STR ID '=' STRING_VALUE	{ 	if(declared[$2] == 0) {
-											value[$2] = $4;
-											declared[$2] = 1;
-											type[$2] = 4;
-											variabled_initialized[$2] = 1;
-											printf("MOV %c,%s\n",$2+'a',$4);
-										} else {
-											printf("Syntax Error : %c is an already declared variable\n", $2 + 'a');
-										}
-									}
-;
+	TYPE_INT ID 	{ 	declare_only($2,1);}
+	|TYPE_FLT ID	{ 	declare_only($2,2);}
+	|TYPE_CHR ID	{ 	declare_only($2,3);}
+	|TYPE_INT ID '=' math_expr	{ 	declare_initalize($2,1);}
+	|TYPE_FLT ID '=' math_expr	{ 	declare_initalize($2,2);}
+	|TYPE_CHR ID '=' CHAR_VALUE		{ 	declare_initalize($2,3);}
+	;
 //TODO edit to match normal declaration registers
 //TODO detect error when attempting to edit
 constant_declaration_statement:
 	TYPE_CONST TYPE_INT ID '=' math_expr			{ 	if(declared[$3] == 0) {
-																									value[$3] = $5;
 																									declared[$3] = 1;
 																									type[$3] = 1;
 																									variabled_initialized[$3] = 1;
@@ -324,14 +258,12 @@ constant_declaration_statement:
 																									else
 																										printf("MOV %c,R0\n",$3+'a');
 																									}
-																								//printf("Push %d\nPop %c", value[$2], $2+'a');
 																							} else {
 																								printf("Syntax Error : %c is an already declared variable\n", $3 + 'a');
 																							}
 																						}
 
 	| TYPE_CONST TYPE_FLT ID '=' math_expr		{ 	if(declared[$3] == 0) {
-																									value[$3] = $5;
 																									declared[$3] = 1;
 																									type[$3] = 1;
 																									variabled_initialized[$3] = 1;
@@ -343,14 +275,12 @@ constant_declaration_statement:
 																									else
 																										printf("MOV %c,R0\n",$3+'a');
 																									}
-																								//printf("Push %d\nPop %c", value[$2], $2+'a');
 																							} else {
 																								printf("Syntax Error : %c is an already declared variable\n", $3 + 'a');
 																							}
 																						}
 	| TYPE_CONST TYPE_CHR ID '=' CHAR_VALUE			{
 																								if(declared[$3] == 0) {
-																									value[$3] = $5;
 																									declared[$3] = 1;
 																									type[$3] = 3;
 																									variabled_initialized[$3] = 1;
@@ -363,7 +293,6 @@ constant_declaration_statement:
 
 	| TYPE_CONST TYPE_STR ID '=' STRING_VALUE		{
 																								if(declared[$3] == 0) {
-																									value[$3] = $5;
 																									declared[$3] = 1;
 																									type[$3] = 4;
 																									variabled_initialized[$3] = 1;
@@ -379,13 +308,6 @@ constant_declaration_statement:
 int main(void)
 {
 	return yyparse();
-
-
-}
-int yyerror(char* s)
-{
-  fprintf(stderr, "%s\n",s);
-  return 1;
 }
 void reset()
 {
@@ -394,7 +316,39 @@ void reset()
 	after_hp = 0;
 	printf("\n");
 }
+void declare_only(int id,int type_)
+{
+	if(declared[id] == 0) {
+	declared[id] = 1;
+	type[id] = type_;
+	variabled_initialized[id] = 0;
+	} else {
+		printf("Syntax Error : %c is an already declared variable\n", id + 'a');
+	}
+}
 
+void declare_initalize(int id, int type_){
+	if(declared[id] == 0) {
+		declared[id] = 1;
+		type[id] = type_;
+		variabled_initialized[id] = 1;
+		if(is_first){
+			printf("MOV %c,R%d\n",id+'a',--next_reg);
+		}else{
+			if(after_hp)
+				printf("MOV %c,R4\n",id+'a');
+			else
+				printf("MOV %c,R0\n",id+'a');
+			}
+	} else {
+		printf("Syntax Error : %c is an already declared variable\n", id + 'a');
+	}
+}
+int yyerror(char* s)
+{
+  fprintf(stderr, "%s\n",s);
+  return 1;
+}
 int yywrap()
 {
   return(1);

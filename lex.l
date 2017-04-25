@@ -57,8 +57,7 @@ ALNUM [0-9a-zA-Z]
 								return(CHAR_VALUE); }
 {ALPHA}						{	yylval.INTGR = *yytext-'a';
 								return(ID);}
-{ALPHA_CAPITAL}				{	yylval.INTGR = *yytext-'A'+26;
-								return(ID);}
+                
 \"[0-9a-zA-Z ]+\" 			{ 	yylval.STRNG = yytext;
 								return(STRING_VALUE); }
 
