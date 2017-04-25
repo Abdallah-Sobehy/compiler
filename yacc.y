@@ -16,8 +16,10 @@
 void reset();
 void declare_initalize(int id, int type_);
 void declare_only(int id, int type_);
+void calc_lowp(char*);
 int exitFlag=0;
 int next_reg = 1; // The register number to be written in the next instruction
+int next_cond_reg = 11;
 int is_first = 1; // check if is the first operation for consistent register counts
 int after_hp = 0; // a high priority operation is done
 int declared[26];
@@ -31,7 +33,6 @@ int type[26];
 %union {int INTGR; char * STRNG; float FLT; char CHR;}
 %start statement
 %token IF ELSE ELSEIF FOR WHILE SWITCH CASE DO BREAK
-%token AND OR NOT EQ GTE LTE GT LT INC DEC
 %token TYPE_INT TYPE_FLT TYPE_STR TYPE_CHR TYPE_CONST
 %token <INTGR> ID
 %token <INTGR> NUM
@@ -42,8 +43,10 @@ int type[26];
 %type <INTGR> math_expr
 %type <INTGR> high_priority_expr
 %type <INTGR> math_element
+%left '~' '^' '&' '|'
 %left '+' '-'
 %left '*' '/'
+%left AND OR NOT EQ GTE LTE GT LT INC DEC
 /*Other type defs depend on non-terminal nodes that you are going to make*/
 
 // Production rules
@@ -71,48 +74,31 @@ conditional_statement :
 			;
 
 if_statement :
-			IF '(' condition ')''{' statement '}' {;}
-			| IF '(' condition ')''{' statement '}' ELSE '{' statement '}' {;}
-			| IF '(' condition ')''{' statement '}' ELSE if_statement {;}
+			IF '(' major_condition ')''{' statement '}' {;}
+			| IF '(' major_condition ')''{' statement '}' ELSE '{' statement '}' {;}
+			| IF '(' major_condition ')''{' statement '}' ELSE if_statement {;}
+			| major_condition {;} //TODO REMOVE this line
+
+major_condition :
+			'(' major_condition ')' {;}
+			| major_condition OR condition {printf("OR Rr, R%d, R%d\n", --next_cond_reg, --next_cond_reg);}
+			| major_condition AND condition {printf("AND Rr, R%d, R%d\n", --next_cond_reg, --next_cond_reg);}
+			| NOT major_condition {printf("NOT R%d\n", --next_reg);}
+			| condition {;}
 
 condition :
+			math_expr EQ math_expr {printf("CMPE R%d, R%d,R%d\n", next_cond_reg++, --next_reg ,--next_reg);}
+			| math_expr NOT EQ math_expr {printf("CMPNE R%d, R%d,R%d\n", next_cond_reg++, --next_reg ,--next_reg);}
+			| math_expr GTE math_expr {printf("CMPGE R%d, R%d,R%d\n", next_cond_reg++, --next_reg ,--next_reg);}
+			| math_expr GT math_expr {printf("CMPG R%d, R%d,R%d\n", next_cond_reg++, --next_reg ,--next_reg);}
+			| math_expr LTE math_expr {printf("CMPLE R%d, R%d,R%d\n", next_cond_reg++, --next_reg ,--next_reg);}
+			| math_expr LT math_expr {printf("CMPL R%d, R%d,R%d\n", next_cond_reg++, --next_reg ,--next_reg);}
+
 
 math_expr	:
  			'('math_expr')'											{$$=$2;}
-			|math_expr '+' high_priority_expr    {
-																									$$ = $1 + $3;
-																									/*printf("Result +: %d. ",$$);*/
-																									if(is_first){
-																										printf("ADD R0,R%d,R%d\n",--next_reg ,--next_reg );
-																										is_first=0;
-																									}
-																									else{
-																										if(after_hp){
-																											printf("ADD R0,R%d,R4\n",--next_reg);
-																											after_hp = 0;
-																										}
-																										else{
-																											printf("ADD R0,R%d,R0\n",--next_reg);
-																										}
-																										}
-																								}
-			| math_expr '-' high_priority_expr    		{
-																									$$ = $1 - $3;
-																									/*printf("Result - : %d. ",$$);*/
-																									if(is_first){
-																										printf("SUB R0,R%d,R%d\n",--next_reg ,--next_reg );
-																										is_first = 0;
-																									}
-																									else{
-																										if(after_hp){
-																											printf("SUB R0,R%d,R4\n",--next_reg);
-																											after_hp = 0;
-																										}
-																										else{
-																											printf("SUB R0,R%d,R0\n",--next_reg);
-																										}
-																										}
-																								}
+			|math_expr '+' high_priority_expr    { calc_lowp("ADD"); }
+			| math_expr '-' high_priority_expr    		{ calc_lowp("SUB"); }
 		  | '~' math_expr 													{
 																												$$ = ~$2;
 																												if(after_hp)
@@ -120,57 +106,9 @@ math_expr	:
 																												else
 																													printf("NOT R%d\n",next_reg-1);
 																											}
-			| math_expr '|' high_priority_expr				{
-																									$$ = $1 | $3;
-																									if(is_first){
-																										printf("OR R0,R%d,R%d\n",--next_reg ,--next_reg );
-																										is_first = 0;
-																									}
-																									else{
-																										if(after_hp){
-																											printf("OR R0,R%d,R4\n",--next_reg);
-																											after_hp = 0;
-																										}
-																										else{
-																											printf("OR R0,R%d,R0\n",--next_reg);
-																										}
-																										}
-
-																								}
-			| math_expr '&' high_priority_expr				{
-																									$$ = $1 & $3;
-																									if(is_first){
-																										printf("AND R0,R%d,R%d\n",--next_reg ,--next_reg );
-																										is_first = 0;
-																									}
-																									else{
-																										if(after_hp){
-																											printf("AND R0,R%d,R4\n",--next_reg);
-																											after_hp = 0;
-																										}
-																										else{
-																											printf("AND R0,R%d,R0\n",--next_reg);
-																										}
-																										}
-
-																								}
-			| math_expr '^' high_priority_expr				{
-																									$$ = $1 ^ $3;
-																									if(is_first){
-																										printf("XOR R0,R%d,R%d\n",--next_reg ,--next_reg );
-																										is_first = 0;
-																									}
-																									else{
-																										if(after_hp){
-																											printf("XOR R0,R%d,R4\n",--next_reg);
-																											after_hp = 0;
-																										}
-																										else{
-																											printf("XOR R0,R%d,R0\n",--next_reg);
-																										}
-																										}
-
-																								}
+			| math_expr '|' high_priority_expr				{ calc_lowp("OR"); }
+			| math_expr '&' high_priority_expr				{ calc_lowp("AND"); }
+			| math_expr '^' high_priority_expr				{ calc_lowp("XOR"); }
 			|high_priority_expr												{	$$=$1;}
 			;
 
@@ -325,6 +263,23 @@ void declare_only(int id,int type_)
 	} else {
 		printf("Syntax Error : %c is an already declared variable\n", id + 'a');
 	}
+}
+
+void calc_lowp (char * op) {
+	/*$$ = $1 + $3;*/
+	if(is_first){
+		printf("%s R0,R%d,R%d\n", op, --next_reg ,--next_reg );
+		is_first=0;
+	}
+	else{
+		if(after_hp){
+			printf("%s R0,R%d,R4\n",op, --next_reg);
+			after_hp = 0;
+		}
+		else{
+			printf("%s R0,R%d,R0\n",op, --next_reg);
+		}
+		}
 }
 
 void declare_initalize(int id, int type_){
