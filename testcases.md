@@ -34,15 +34,80 @@ int x = ! 3 + 4;
 ## Conditional statement
 ### IF
 ```c
+if ( 3 == 4 + 1  || 2 == 2 || -1 == 6) {
+int x = 2 ;
+}
+int y = 2;
+
+MOV R1, 3
+MOV R2, 4
+MOV R3, 1
+ADD R0,R3,R2
+CMPE R10,R1,R0
+MOV R0, 2
+MOV R1, 2
+CMPE R14,R1,R0
+OR R10,R10,R14
+MOV R0, -1
+MOV R1, 6
+CMPE R14,R1,R0
+OR R10,R10,R14
+JNZ R10, label2
+
+MOV R1, 2
+MOV x,R1
+label2:
+MOV R1, 2
+MOV y,R1
+```
+``````
+int x = 1;
+if ( ! x == 3 ){
+	if( x != 3 ) {
+		int y = 2;
+	}
+int z = 1;
+}
+int w;
+
+MOV R1, 1
+MOV x,R1
+
+MOV R1, x
+MOV R2, 3
+CMPE R10,R2,R1
+NOT R10
+JNZ R10, label2
+
+MOV R1, x
+MOV R2, 3
+CMPNE R10,R2,R1
+JNZ R10, label3
+
+MOV R1, 2
+MOV y,R1
+
+label3:
+
+MOV R1, 1
+MOV z,R1
+
+label2:
+
+
+```
+
+
+```c
 int x = 0;
 int z = 1;
 if (x == 0) {
   x = 1;
   if (x == 1) {
     int y = 3;
-    x = 2
+    x = 2;
   } else {
-    int y = 2;
+    int t = 2;
     x = 10;
   }
 } else if ( z == 0 ) {
@@ -50,8 +115,9 @@ if (x == 0) {
 }
 
 if ( x > 20) {
-
+int m = 1;
 }
+
 ```
 
 ### While loops

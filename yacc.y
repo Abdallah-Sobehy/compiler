@@ -16,16 +16,23 @@
 void reset();
 void declare_initalize(int id, int type_);
 void declare_only(int id, int type_);
+void declare_const(int id, int type);
 void calc_lowp(char*);
+void calc_highp(char*);
+void cond_lowp(char*);
+void cond_highp(char*);
 int exitFlag=0;
 int next_reg = 1; // The register number to be written in the next instruction
 int next_cond_reg = 11;
 int is_first = 1; // check if is the first operation for consistent register counts
+int is_first_cond = 1;
 int after_hp = 0; // a high priority operation is done
+int after_hp_cond = 0; // a high priority operation is done
 int declared[26];
 int is_constant[26];// for each variable store 1 if it constant
 int scope[26]; // a scope number for each variable
-int current_scope = 0;
+int scopes_id[50];
+int current_scope = 1;
 int variabled_initialized[26];
 int type[26];
 %}
@@ -46,7 +53,7 @@ int type[26];
 %left '~' '^' '&' '|'
 %left '+' '-'
 %left '*' '/'
-%left AND OR NOT EQ GTE LTE GT LT INC DEC
+%left AND OR NOT EQ NOTEQ GTE LTE GT LT INC DEC
 /*Other type defs depend on non-terminal nodes that you are going to make*/
 
 // Production rules
@@ -74,25 +81,31 @@ conditional_statement :
 			;
 
 if_statement :
-			IF '(' major_condition ')''{' statement '}' {;}
-			| IF '(' major_condition ')''{' statement '}' ELSE '{' statement '}' {;}
-			| IF '(' major_condition ')''{' statement '}' ELSE if_statement {;}
-			| major_condition {;} //TODO REMOVE this line
-
-major_condition :
-			'(' major_condition ')' {;}
-			| major_condition OR condition {printf("OR Rr, R%d, R%d\n", --next_cond_reg, --next_cond_reg);}
-			| major_condition AND condition {printf("AND Rr, R%d, R%d\n", --next_cond_reg, --next_cond_reg);}
-			| NOT major_condition {printf("NOT R%d\n", --next_reg);}
-			| condition {;}
-
+			IF '(' condition ')'open_brace statement closed_brace {;}
+			| IF '(' condition ')'open_brace statement closed_brace ELSE_FINAL statement closed_brace {;}
+			| IF '(' condition ')'open_brace statement closed_brace ELSE if_statement {;}
+			| condition {;} //TODO REMOVE this line
+			;
+ELSE_FINAL : ELSE '{' {printf("JZ R10, label%d\n",++current_scope);reset();}
+open_brace : '{' {printf("JNZ R10, label%d\n",++current_scope);reset();}
+closed_brace : '}' {printf("label%d:\n",current_scope--);}
+;
 condition :
-			math_expr EQ math_expr {printf("CMPE R%d, R%d,R%d\n", next_cond_reg++, --next_reg ,--next_reg);}
-			| math_expr NOT EQ math_expr {printf("CMPNE R%d, R%d,R%d\n", next_cond_reg++, --next_reg ,--next_reg);}
-			| math_expr GTE math_expr {printf("CMPGE R%d, R%d,R%d\n", next_cond_reg++, --next_reg ,--next_reg);}
-			| math_expr GT math_expr {printf("CMPG R%d, R%d,R%d\n", next_cond_reg++, --next_reg ,--next_reg);}
-			| math_expr LTE math_expr {printf("CMPLE R%d, R%d,R%d\n", next_cond_reg++, --next_reg ,--next_reg);}
-			| math_expr LT math_expr {printf("CMPL R%d, R%d,R%d\n", next_cond_reg++, --next_reg ,--next_reg);}
+			'(' condition ')' {;}
+		| condition OR high_p_condition {cond_lowp("OR");}
+			| condition AND high_p_condition {cond_lowp("AND");}
+			| NOT condition {printf("NOT R10\n");}
+			| high_p_condition {;}
+			; // @ASobehy is this neccesary
+
+high_p_condition :
+			math_expr EQ math_expr {cond_highp("CMPE");}
+			| math_expr NOTEQ math_expr {cond_highp("CMPNE");}
+			| math_expr GTE math_expr {cond_highp("CMPGE");}
+			| math_expr GT math_expr {cond_highp("CMPG");}
+			| math_expr LTE math_expr {cond_highp("CMPLE");}
+			| math_expr LT math_expr {cond_highp("CMPL");}
+			; // @ASobehy is this neccesary
 
 
 math_expr	:
@@ -112,33 +125,9 @@ math_expr	:
 			|high_priority_expr												{	$$=$1;}
 			;
 
-high_priority_expr:		high_priority_expr '*' math_element		{
-																															$$ = $1 * $3;
-																															/*printf("Result * : %d. ",$$);*/
-																															if(!after_hp){
-																																printf("MUL R4,R%d,R%d\n",--next_reg ,--next_reg );
-																																after_hp = 1;
-																																is_first = 0;
-																															}
-																															else{
-																																printf("MUL R4,R%d,R4\n",--next_reg );
-																															}
-
-																														}
-						|high_priority_expr '/' math_element						{
-																															$$ = $1 / $3;
-																															if(!after_hp){
-																																printf("DIV R4,R%d,R%d\n",--next_reg ,--next_reg );
-																																after_hp = 1;
-																																is_first = 0;
-																															}
-																															else{
-																																printf("DIV R4,R%d,R4\n",--next_reg );
-																															}
-																														}
-						|math_element																		{
-																															$$=$1;
-																														}
+high_priority_expr:		high_priority_expr '*' math_element		{ calc_highp("MUL"); }
+						|high_priority_expr '/' math_element						{ calc_highp("DIV"); }
+						|math_element																		{ $$=$1; }
 						;
 
 //TODO: ID type check
@@ -184,38 +173,10 @@ variable_declaration_statement:
 //TODO edit to match normal declaration registers
 //TODO detect error when attempting to edit
 constant_declaration_statement:
-	TYPE_CONST TYPE_INT ID '=' math_expr			{ 	if(declared[$3] == 0) {
-																									declared[$3] = 1;
-																									type[$3] = 1;
-																									variabled_initialized[$3] = 1;
-																									if(is_first){
-																										printf("MOV %c,R%d\n",$3+'a',--next_reg);
-																								}else{
-																									if(after_hp)
-																										printf("MOV %c,R4\n",$3+'a');
-																									else
-																										printf("MOV %c,R0\n",$3+'a');
-																									}
-																							} else {
-																								printf("Syntax Error : %c is an already declared variable\n", $3 + 'a');
-																							}
+	TYPE_CONST TYPE_INT ID '=' math_expr			{ 	declare_const($3,1);
 																						}
 
-	| TYPE_CONST TYPE_FLT ID '=' math_expr		{ 	if(declared[$3] == 0) {
-																									declared[$3] = 1;
-																									type[$3] = 1;
-																									variabled_initialized[$3] = 1;
-																									if(is_first){
-																										printf("MOV %c,R%d\n",$3+'a',--next_reg);
-																								}else{
-																									if(after_hp)
-																										printf("MOV %c,R4\n",$3+'a');
-																									else
-																										printf("MOV %c,R0\n",$3+'a');
-																									}
-																							} else {
-																								printf("Syntax Error : %c is an already declared variable\n", $3 + 'a');
-																							}
+	| TYPE_CONST TYPE_FLT ID '=' math_expr		{ 	declare_const($3,2);
 																						}
 	| TYPE_CONST TYPE_CHR ID '=' CHAR_VALUE			{
 																								if(declared[$3] == 0) {
@@ -245,26 +206,12 @@ constant_declaration_statement:
 //Normal C-code
 int main(void)
 {
+	for (int i = 0; i < 50; i++)
+	{
+	    scopes_id[i] = i;
+	}
 	return yyparse();
 }
-void reset()
-{
-	next_reg = 1;
-	is_first = 1;
-	after_hp = 0;
-	printf("\n");
-}
-void declare_only(int id,int type_)
-{
-	if(declared[id] == 0) {
-	declared[id] = 1;
-	type[id] = type_;
-	variabled_initialized[id] = 0;
-	} else {
-		printf("Syntax Error : %c is an already declared variable\n", id + 'a');
-	}
-}
-
 void calc_lowp (char * op) {
 	/*$$ = $1 + $3;*/
 	if(is_first){
@@ -282,11 +229,68 @@ void calc_lowp (char * op) {
 		}
 }
 
-void declare_initalize(int id, int type_){
+void calc_highp (char * op) {
+	if(!after_hp){
+		printf("%s R4,R%d,R%d\n", op, --next_reg ,--next_reg );
+		after_hp = 1;
+		is_first = 0;
+	}
+	else{
+		printf("%s R4,R%d,R4\n", op, --next_reg );
+	}
+}
+
+void cond_lowp (char * op) {
+printf("%s R10,R10,R14\n",op);
+}
+
+void cond_highp (char * op) {
+	if(!after_hp_cond){
+		printf("%s R10,R%d,R%d\n", op, --next_reg ,--next_reg );
+		after_hp_cond = 1;
+		is_first_cond = 0;
+	}
+	else{
+		printf("%s R14,R%d,R%d\n", op, --next_reg, --next_reg );
+	}
+}
+void declare_only(int id,int type_)
+{
+	if(declared[id] == 0) {
+	declared[id] = 1;
+	type[id] = type_;
+	variabled_initialized[id] = 0;
+	is_constant[id] = 0;
+	} else {
+		printf("Syntax Error : %c is an already declared variable\n", id + 'a');
+	}
+}
+
+void declare_const(int id, int _type)
+{
+	if(declared[id] == 0) {
+			declared[id] = 1;
+			type[id] = _type;
+			variabled_initialized[id] = 1;
+			is_constant[id] = 1;
+			if(is_first){
+				printf("MOV %c,R%d\n",id+'a',--next_reg);
+		}else{
+			if(after_hp)
+				printf("MOV %c,R4\n",id+'a');
+			else
+				printf("MOV %c,R0\n",id+'a');
+			}
+	} else {
+		printf("Syntax Error : %c is an already declared variable\n", id + 'a');
+	}
+}
+void declare_initalize(int id, int _type){
 	if(declared[id] == 0) {
 		declared[id] = 1;
-		type[id] = type_;
+		type[id] = _type;
 		variabled_initialized[id] = 1;
+		is_constant[id] = 0;
 		if(is_first){
 			printf("MOV %c,R%d\n",id+'a',--next_reg);
 		}else{
@@ -298,6 +302,15 @@ void declare_initalize(int id, int type_){
 	} else {
 		printf("Syntax Error : %c is an already declared variable\n", id + 'a');
 	}
+}
+void reset()
+{
+	next_reg = 1;
+	is_first = 1;
+	after_hp = 0;
+	is_first_cond = 1;
+	after_hp_cond = 0;
+	printf("\n");
 }
 int yyerror(char* s)
 {

@@ -32,6 +32,7 @@ ALNUM [0-9a-zA-Z]
 "||"		return(OR);
 "!"			return(NOT);
 "=="		return(EQ);
+"!="			return(NOTEQ);
 ">="		return(GTE);
 "<="		return(LTE);
 ">"			return(GT);
@@ -57,7 +58,7 @@ ALNUM [0-9a-zA-Z]
 								return(CHAR_VALUE); }
 {ALPHA}						{	yylval.INTGR = *yytext-'a';
 								return(ID);}
-                
+
 \"[0-9a-zA-Z ]+\" 			{ 	yylval.STRNG = yytext;
 								return(STRING_VALUE); }
 
