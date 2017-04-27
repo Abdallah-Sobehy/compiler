@@ -24,9 +24,11 @@ ALNUM [0-9a-zA-Z]
 "for"     return(FOR);
 "switch"  return(SWITCH);
 "case"    return(CASE);
+"default" return(DEFAULT);
 "do"		return(DO);
+"break" return(BREAK);
 
-[*+-/=%;~&|^(){}]  {return yytext[0];}
+[*+-/=%;~&|^(){}:]  {return yytext[0];}
 
 "&&"		return (AND);
 "||"		return(OR);

@@ -203,4 +203,79 @@ MOV x,R1
 JMP label1
 label2:
 ```
-The previous case could output a warning
+### For loops
+```c
+int x = 3;
+switch(x){
+  case 5 : x = x + 2;
+  case 8 : x = 1; break;
+}
+MOV R1, 3
+MOV x,R1
+
+MOV RS,x
+MOV R1, 5
+CMPE R10,RS,R1
+JF R10,labelS1
+
+MOV R1, x
+MOV R2, 2
+ADD R0,R2,R1
+MOV x,R0
+
+labelS1:
+MOV R1, 8
+CMPE R10,RS,R1
+JF R10,labelS2
+
+MOV R1, 1
+MOV x,R1
+
+JMP 1
+labels2:
+label1:
+
+```
+``````
+int x = 10;
+int y = 15;
+switch(x){
+  case y + 3 : x = x + 2; break;
+  case 8 : x = 1;
+	default: int z = 1;
+}
+MOV R1, 10
+MOV x,R1
+
+MOV R1, 15
+MOV y,R1
+
+MOV RS,x
+MOV R1, y
+MOV R2, 3
+ADD R0,R2,R1
+CMPE R10,RS,R0
+JF R10,labelS1
+
+MOV R1, x
+MOV R2, 2
+ADD R0,R2,R1
+MOV x,R0
+
+JMP label1
+labelS1:
+MOV R1, 8
+CMPE R10,RS,R1
+JF R10,labelS2
+
+MOV R1, 1
+MOV x,R1
+
+MOV R1, 1
+MOV z,R1
+
+labelS2:
+label1:
+
+
+```

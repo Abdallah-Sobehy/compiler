@@ -22,6 +22,7 @@ void calc_lowp(char*);
 void calc_highp(char*);
 void cond_lowp(char*);
 void cond_highp(char*);
+void switch_test ();
 int exitFlag=0;
 int next_reg = 1; // The register number to be written in the next instruction
 int next_cond_reg = 11;
@@ -34,6 +35,7 @@ int declared[26];
 int is_constant[26];// for each variable store 1 if it constant
 int scope[26]; // a scope number for each variable
 int scopes_id[50];
+int next_case = 0;
 int current_scope = 0;
 int variabled_initialized[26];
 int type[26];
@@ -41,7 +43,7 @@ int type[26];
 // definitions
 %union {int INTGR; char * STRNG; float FLT; char CHR;}
 %start statement
-%token IF ELSE ELSEIF FOR WHILE SWITCH CASE DO BREAK
+%token IF ELSE ELSEIF FOR WHILE SWITCH CASE DO BREAK DEFAULT
 %token TYPE_INT TYPE_FLT TYPE_STR TYPE_CHR TYPE_CONST
 %token <INTGR> ID
 %token <INTGR> NUM
@@ -57,7 +59,9 @@ int type[26];
 %left '*' '/'
 %left AND OR NOT EQ NOTEQ GTE LTE GT LT INC DEC
 /*Other type defs depend on non-terminal nodes that you are going to make*/
-
+//TODO error handling when assigning float for char for example (conflicting types)
+//TODO scope detection to detect errors when iniatializing variables in different scope
+//TODO More testing
 // Production rules
 %%
 
@@ -80,7 +84,24 @@ conditional_statement :
 			|while_loop {;}
 			|for_loop {;}
 			|do_while {;}
+			|switch_statement{;}
 			;
+switch_statement:
+			SWITCH '(' ID ')' {printf("MOV RS,%c\n",$3+'a');current_scope++;} switch_body
+			;
+switch_body:
+			'{' cases '}' {printf("labelS%d:\nlabel%d:\n",next_case,current_scope--);}
+			|'{' cases default '}' {printf("labelS%d:\nlabel%d:\n",next_case,current_scope--);}
+cases: CASE {if(next_case>0)
+								{printf("labelS%d:\n",next_case);}
+							next_case++;}
+							math_expr  {switch_test();}':' statement case_break{;}
+			|cases cases {;}
+			;
+case_break: // CAN BE EMPTY
+			| BREAK ';' {printf("JMP label%d\n",current_scope);}
+default: DEFAULT ':' statement {;}
+
 do_while: DO '{' {printf("label:%d\n",++current_scope);} statement '}' WHILE '('condition')' {printf("JT R10,label%d\n",current_scope--);}
 for_loop:
 			FOR '(' assign_statement for_sep1 condition for_sep2 assign_statement ')'for_ob statement for_cb {;}
@@ -154,7 +175,7 @@ math_element:	NUM			  				{$$=$1;
 																printf("MOV R%d, %d\n",next_reg++ ,$1);}
 				| FLOATING_NUM					{$$=$1;
 																printf("MOV R%d, %f\n",next_reg++,$1);}
-				| ID 										{
+				| ID 										{$$=$1;
 																	if(declared[$1] == 1){
 																		if(variabled_initialized[$1] == 1){
 																			$$=$1;
@@ -263,6 +284,22 @@ void cond_highp (char * op) {
 	else{
 		printf("%s R14,R%d,R%d\n", op, --next_reg, --next_reg );
 	}
+}
+void switch_test () {
+	if(is_first){
+		printf("CMPE R10,RS,R%d\n", --next_reg );
+		is_first=0;
+	}
+	else{
+		if(after_hp){
+			printf("CMPE R10,RS,R4\n", --next_reg);
+		}
+		else{
+			printf("CMPE R10,RS,R0\n", --next_reg);
+		}
+		}
+		printf("JF R10,labelS%d\n",next_case);
+		reset();
 }
 void declare_only(int id,int type_)
 {
