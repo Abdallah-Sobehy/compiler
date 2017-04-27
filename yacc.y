@@ -16,6 +16,7 @@
 void reset();
 void declare_initalize(int id, int type_);
 void declare_only(int id, int type_);
+void assign_only(int id);
 void declare_const(int id, int type);
 void calc_lowp(char*);
 void calc_highp(char*);
@@ -24,6 +25,7 @@ void cond_highp(char*);
 int exitFlag=0;
 int next_reg = 1; // The register number to be written in the next instruction
 int next_cond_reg = 11;
+int first_for = 1;
 int is_first = 1; // check if is the first operation for consistent register counts
 int is_first_cond = 1;
 int after_hp = 0; // a high priority operation is done
@@ -32,7 +34,7 @@ int declared[26];
 int is_constant[26];// for each variable store 1 if it constant
 int scope[26]; // a scope number for each variable
 int scopes_id[50];
-int current_scope = 1;
+int current_scope = 0;
 int variabled_initialized[26];
 int type[26];
 %}
@@ -75,20 +77,37 @@ statement	: variable_declaration_statement ';' {reset();}
 
 conditional_statement :
 			if_statement {;}
-			/*| for_loop {;}
-			| while_loop {;}
-			| do_while {;}*/
+			|while_loop {;}
+			|for_loop {;}
+			|do_while {;}
 			;
+do_while: DO '{' {printf("label:%d\n",++current_scope);} statement '}' WHILE '('condition')' {printf("JT R10,label%d\n",current_scope--);}
+for_loop:
+			FOR '(' assign_statement for_sep1 condition for_sep2 assign_statement ')'for_ob statement for_cb {;}
+for_sep1 : ';' {printf("MOV RF,0\n");
+								printf("label%d:\n",++current_scope);reset();}
+for_sep2 : ';' {printf("JF R10, label%d\n",++current_scope);
+								printf("CMPE RF,0\n");
+								printf("JT label%d\n", ++current_scope);}
+for_ob : '{' {printf("label%d:\n",current_scope--);
+							printf("MOV RF,1\n");reset();}
+for_cb : '}' {printf("JMP label%d\n",--current_scope);
+							printf("label%d:\n",++current_scope);}
 
-if_statement :
-			IF '(' condition ')'open_brace statement closed_brace {;}
-			| IF '(' condition ')'open_brace statement closed_brace ELSE_FINAL statement closed_brace {;}
-			| IF '(' condition ')'open_brace statement closed_brace ELSE if_statement {;}
-			| condition {;} //TODO REMOVE this line
+while_loop :
+			WHILE {printf("label%d:\n",++current_scope);} '(' condition ')' while_open_brace statement while_closed_brace {;}
 			;
-ELSE_FINAL : ELSE '{' {printf("JZ R10, label%d\n",++current_scope);reset();}
-open_brace : '{' {printf("JNZ R10, label%d\n",++current_scope);reset();}
-closed_brace : '}' {printf("label%d:\n",current_scope--);}
+while_open_brace : '{' {printf("JF R10, label%d\n",++current_scope);reset();}
+while_closed_brace : '}' {printf("JMP label%d\n",--current_scope);
+													printf("label%d:\n",++current_scope);reset();}
+if_statement :
+			IF '(' condition ')'if_open_brace statement if_closed_brace {;}
+			| IF '(' condition ')'if_open_brace statement if_closed_brace ELSE_FINAL statement if_closed_brace {;}
+			| IF '(' condition ')'if_open_brace statement if_closed_brace ELSE if_statement {;}
+			;
+ELSE_FINAL : ELSE '{' {printf("JT R10, label%d\n",++current_scope);reset();}
+if_open_brace : '{' {printf("JF R10, label%d\n",++current_scope);reset();}
+if_closed_brace : '}' {printf("label%d:\n",current_scope--);}
 ;
 condition :
 			'(' condition ')' {;}
@@ -150,18 +169,9 @@ math_element:	NUM			  				{$$=$1;
 				| '('math_expr')'				{$$=$2;}
 				;
 assign_statement:
-	ID '=' math_expr	{	if(declared[$1] == 1) {
-												variabled_initialized[$1] = 1;
-												if(after_hp)
-													printf("MOV %c,R4\n",$1+'a');
-												else
-													printf("MOV %c,R0\n",$1+'a');
-											}
-											else {
-												printf("Syntax Error : %c is not declared\n", $1 + 'a');
-											}
+//TODO assign statement for char !
+	ID '=' math_expr	{	assign_only($1);
 										}
-										;
 variable_declaration_statement:
 	TYPE_INT ID 	{ 	declare_only($2,1);}
 	|TYPE_FLT ID	{ 	declare_only($2,2);}
@@ -265,7 +275,22 @@ void declare_only(int id,int type_)
 		printf("Syntax Error : %c is an already declared variable\n", id + 'a');
 	}
 }
-
+void assign_only(int id){
+	if(declared[id] == 1) {
+		variabled_initialized[id] = 1;
+		if(is_first){
+			printf("MOV %c,R%d\n",id+'a',--next_reg);
+		}else{
+			if(after_hp)
+				printf("MOV %c,R4\n",id+'a');
+			else
+				printf("MOV %c,R0\n",id+'a');
+			}
+	}
+	else {
+		printf("Syntax Error : %c is not declared\n", id + 'a');
+	}
+}
 void declare_const(int id, int _type)
 {
 	if(declared[id] == 0) {

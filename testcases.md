@@ -123,19 +123,84 @@ int m = 1;
 ### While loops
 ```c
 int x = 1;
-while( x == 1 &&  x <= 1 || x = 20) {
+while( x == 1 &&  x <= 1 || x == 20 ) {
   x = 67;
 }
+MOV R1, 1
+MOV x,R1
 
+label1:
+MOV R1, x
+MOV R2, 1
+CMPE R10,R2,R1
+MOV R1, x
+MOV R2, 1
+CMPLE R14,R2,R1
+AND R10,R10,R14
+MOV R1, x
+MOV R2, 20
+CMPE R14,R2,R1
+OR R10,R10,R14
+JF R10, label2
+
+MOV R1, 67
+MOV x,R1
+
+JMP label1
+label2:
+```
+
+```c
+int x = 50;
 do {
   x = x + 1;
 } while ( x <= 100 )
+MOV R1, 50
+MOV x,R1
+
+label:1
+MOV R1, x
+MOV R2, 1
+ADD R0,R2,R1
+MOV x,R0
+
+MOV R1, x
+MOV R2, 100
+CMPLE R10,R2,R1
+JT R10,label1
+
+
 ```
 
 ### For loops
 ```c
-for ( int i = 0; i < 10; i = i + 1 ) {
+int i;  
+for ( i = 0; i < 10; i = i + 1 ) {
   int x = 1;
 }
+
+MOV R1, 0
+MOV i,R1
+MOV RF,0
+label1:
+
+MOV R1, i
+MOV R2, 10
+CMPL R10,R2,R1
+JF R10, label2
+CMPE RF,0
+JT label3
+MOV R1, i
+MOV R2, 1
+ADD R0,R2,R1
+MOV i,R0
+label3:
+MOV RF,1
+
+MOV R1, 1
+MOV x,R1
+
+JMP label1
+label2:
 ```
 The previous case could output a warning
