@@ -200,8 +200,8 @@ math_element:	NUM			  				{$$=$1;
 				;
 assign_statement:
 //TODO assign statement for char !
-	ID '=' math_expr	{	assign_only($1);
-										}
+	ID '=' math_expr	{	assign_only($1);}
+
 variable_declaration_statement:
 	TYPE_INT ID 	{ 	declare_only($2,1);}
 	|TYPE_FLT ID	{ 	declare_only($2,2);}
@@ -230,17 +230,6 @@ constant_declaration_statement:
 																									variabled_initialized[$3] = 1;
 																									printf("MOV %c,'%c'\n",$3+'a',$5+'a');
 
-																								} else {
-																									printf("Syntax Error : %c is an already declared variable\n", $3 + 'a');
-																								}
-																							}
-
-	| TYPE_CONST TYPE_STR ID '=' STRING_VALUE		{
-																								if(declared[$3] == 0) {
-																									declared[$3] = 1;
-																									type[$3] = 4;
-																									scope[$3] = cscope;
-																									variabled_initialized[$3] = 1;
 																								} else {
 																									printf("Syntax Error : %c is an already declared variable\n", $3 + 'a');
 																								}
@@ -326,17 +315,20 @@ void declare_only(int id,int type_)
 }
 void assign_only(int id){
 	if(declared[id] == 1) {
-		variabled_initialized[id] = 1;
-		if(is_first){
-			printf("MOV %c,R%d\n",id+'a',--next_reg);
-		}else{
-			if(after_hp)
-				printf("MOV %c,R4\n",id+'a');
-			else
-				printf("MOV %c,R0\n",id+'a');
+		if (is_constant[id] == 0) {
+			variabled_initialized[id] = 1;
+			if(is_first){
+				printf("MOV %c,R%d\n",id+'a',--next_reg);
+				}else{
+					if(after_hp)
+						printf("MOV %c,R4\n",id+'a');
+					else
+						printf("MOV %c,R0\n",id+'a');
+				}
+			} else {
+				printf("Syntax Error : %c is a constant\n", id + 'a');
 			}
-	}
-	else {
+	} else {
 		printf("Syntax Error : %c is not declared\n", id + 'a');
 	}
 }
