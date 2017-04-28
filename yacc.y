@@ -69,8 +69,6 @@ int type[26];
 %left AND OR NOT EQ NOTEQ GTE LTE GT LT INC DEC
 /*Other type defs depend on non-terminal nodes that you are going to make*/
 //TODO error handling when assigning float for char for example (conflicting types)
-//TODO scope detection to detect errors when iniatializing variables in different scope
-//TODO More testing
 // Production rules
 %%
 
@@ -227,13 +225,13 @@ variable_declaration_statement:
 																	printf("Syntax Error : %c is an already declared variable\n", $2 + 'a');
 																}
 															}
+		|TYPE_CHR ID '=' FLOATING_NUM { printf("Syntax Error : char can not be assigned a floating number\n");}
 	;
 
 open_brace: '{' { open_brace(); } ;
 close_brace: '}' { close_brace(); };
 
 //TODO edit to match normal declaration registers
-//TODO detect error when attempting to edit
 constant_declaration_statement:
 	TYPE_CONST TYPE_INT ID '=' math_expr			{ 	declare_const($3,1);
 																						}

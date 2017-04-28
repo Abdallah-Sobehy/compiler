@@ -260,6 +260,8 @@ MOV x,R1
 JMP label1
 label2:
 ```
+
+```c
 int i;  
 for ( i = 0; i < 10; i = i + 1 ) {
   int x = 1;
@@ -315,7 +317,7 @@ labelf7:
 
 JMP labelf3
 labelf4:
-
+```
 
 ### Switch case
 ```c
