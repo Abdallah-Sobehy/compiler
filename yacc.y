@@ -215,7 +215,18 @@ variable_declaration_statement:
 	|TYPE_CHR ID	{ 	declare_only($2,3);}
 	|TYPE_INT ID '=' math_expr	{ 	declare_initalize($2,1);}
 	|TYPE_FLT ID '=' math_expr	{ 	declare_initalize($2,2);}
-	|TYPE_CHR ID '=' CHAR_VALUE		{ 	declare_initalize($2,3);}
+	|TYPE_CHR ID '=' CHAR_VALUE	{if(declared[$2] == 0) {
+																	declared[$2] = 1;
+																	type[$2] = 3;
+																	scope[$2] = cscope;
+																	is_constant[$2] = 0;
+																	variabled_initialized[$2] = 1;
+																	printf("MOV %c,'%c'\n",$2+'a',$4+'a');
+
+																} else {
+																	printf("Syntax Error : %c is an already declared variable\n", $2 + 'a');
+																}
+															}
 	;
 
 open_brace: '{' { open_brace(); } ;
@@ -234,6 +245,7 @@ constant_declaration_statement:
 																									declared[$3] = 1;
 																									type[$3] = 3;
 																									scope[$3] = cscope;
+																									is_constant[$3] = 1;
 																									variabled_initialized[$3] = 1;
 																									printf("MOV %c,'%c'\n",$3+'a',$5+'a');
 
