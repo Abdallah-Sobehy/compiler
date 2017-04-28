@@ -16,6 +16,7 @@ MUL R4,R2,R1
 ADD R0,R0,R4  
 MOV v,R0  
 ```  
+
 ```c
 float g = 3;
 
@@ -60,7 +61,8 @@ label2:
 MOV R1, 2
 MOV y,R1
 ```
-``````
+
+```c
 int x = 1;
 if ( ! x == 3 ){
 	if( x != 3 ) {
@@ -93,10 +95,7 @@ MOV R1, 1
 MOV z,R1
 
 label2:
-
-
 ```
-
 
 ```c
 int x = 0;
@@ -107,7 +106,7 @@ if (x == 0) {
     int y = 3;
     x = 2;
   } else {
-    int t = 2;
+    int y = 2;
     x = 10;
   }
 } else if ( z == 0 ) {
@@ -115,9 +114,8 @@ if (x == 0) {
 }
 
 if ( x > 20) {
-int m = 1;
+int y = 1;
 }
-
 ```
 
 ### While loops
@@ -126,6 +124,7 @@ int x = 1;
 while( x == 1 &&  x <= 1 || x == 20 ) {
   x = 67;
 }
+
 MOV R1, 1
 MOV x,R1
 
@@ -155,6 +154,7 @@ int x = 50;
 do {
   x = x + 1;
 } while ( x <= 100 )
+
 MOV R1, 50
 MOV x,R1
 
@@ -168,8 +168,6 @@ MOV R1, x
 MOV R2, 100
 CMPLE R10,R2,R1
 JT R10,label1
-
-
 ```
 
 ### For loops
@@ -203,13 +201,15 @@ MOV x,R1
 JMP label1
 label2:
 ```
-### For loops
+
+### Switch case
 ```c
 int x = 3;
 switch(x){
   case 5 : x = x + 2;
   case 8 : x = 1; break;
 }
+
 MOV R1, 3
 MOV x,R1
 
@@ -236,7 +236,8 @@ labels2:
 label1:
 
 ```
-``````
+
+```c
 int x = 10;
 int y = 15;
 switch(x){
@@ -244,6 +245,7 @@ switch(x){
   case 8 : x = 1;
 	default: int z = 1;
 }
+
 MOV R1, 10
 MOV x,R1
 
@@ -276,6 +278,4 @@ MOV z,R1
 
 labelS2:
 label1:
-
-
 ```

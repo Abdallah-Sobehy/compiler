@@ -23,6 +23,8 @@ void calc_highp(char*);
 void cond_lowp(char*);
 void cond_highp(char*);
 void switch_test ();
+void open_brace();
+void close_brace ();
 int exitFlag=0;
 int next_reg = 1; // The register number to be written in the next instruction
 int next_cond_reg = 11;
@@ -34,7 +36,7 @@ int after_hp_cond = 0; // a high priority operation is done
 int declared[26];
 int is_constant[26];// for each variable store 1 if it constant
 int scope[26]; // a scope number for each variable
-int scopes_id[50];
+int cscope = 0;
 int next_case = 0;
 int current_scope = 0;
 int variabled_initialized[26];
@@ -77,6 +79,8 @@ statement	: variable_declaration_statement ';' {reset();}
 			| statement conditional_statement {reset();}
 			| statement math_expr ';' {reset();}
 			| statement exit_command ';' {exit(EXIT_SUCCESS);}
+			| open_brace statement close_brace statement {;}
+			| statement open_brace statement close_brace {;}
 			;
 
 conditional_statement :
@@ -90,8 +94,8 @@ switch_statement:
 			SWITCH '(' ID ')' {printf("MOV RS,%c\n",$3+'a');current_scope++;} switch_body
 			;
 switch_body:
-			'{' cases '}' {printf("labelS%d:\nlabel%d:\n",next_case,current_scope--);}
-			|'{' cases default '}' {printf("labelS%d:\nlabel%d:\n",next_case,current_scope--);}
+			open_brace cases {printf("labelS%d:\nlabel%d:\n",next_case,current_scope--);} close_brace
+			|open_brace cases default {printf("labelS%d:\nlabel%d:\n",next_case,current_scope--);} close_brace
 cases: CASE {if(next_case>0)
 								{printf("labelS%d:\n",next_case);}
 							next_case++;}
@@ -102,7 +106,7 @@ case_break: // CAN BE EMPTY
 			| BREAK ';' {printf("JMP label%d\n",current_scope);}
 default: DEFAULT ':' statement {;}
 
-do_while: DO '{' {printf("label:%d\n",++current_scope);} statement '}' WHILE '('condition')' {printf("JT R10,label%d\n",current_scope--);}
+do_while: DO '{' {printf("label:%d\n",++current_scope); open_brace();} statement '}' {close_brace();} WHILE '('condition')' {printf("JT R10,label%d\n",current_scope--);}
 for_loop:
 			FOR '(' assign_statement for_sep1 condition for_sep2 assign_statement ')'for_ob statement for_cb {;}
 for_sep1 : ';' {printf("MOV RF,0\n");
@@ -111,25 +115,30 @@ for_sep2 : ';' {printf("JF R10, label%d\n",++current_scope);
 								printf("CMPE RF,0\n");
 								printf("JT label%d\n", ++current_scope);}
 for_ob : '{' {printf("label%d:\n",current_scope--);
-							printf("MOV RF,1\n");reset();}
+							printf("MOV RF,1\n");
+							open_brace();
+							reset();}
 for_cb : '}' {printf("JMP label%d\n",--current_scope);
-							printf("label%d:\n",++current_scope);}
+							printf("label%d:\n",++current_scope);
+							close_brace();
+						}
 
 while_loop :
 			WHILE {printf("label%d:\n",++current_scope);} '(' condition ')' while_open_brace statement while_closed_brace {;}
 			;
-while_open_brace : '{' {printf("JF R10, label%d\n",++current_scope);reset();}
+while_open_brace : '{' {printf("JF R10, label%d\n",++current_scope);reset();open_brace();}
 while_closed_brace : '}' {printf("JMP label%d\n",--current_scope);
-													printf("label%d:\n",++current_scope);reset();}
+													printf("label%d:\n",++current_scope);reset();close_brace();}
 if_statement :
 			IF '(' condition ')'if_open_brace statement if_closed_brace {;}
 			| IF '(' condition ')'if_open_brace statement if_closed_brace ELSE_FINAL statement if_closed_brace {;}
 			| IF '(' condition ')'if_open_brace statement if_closed_brace ELSE if_statement {;}
 			;
-ELSE_FINAL : ELSE '{' {printf("JT R10, label%d\n",++current_scope);reset();}
-if_open_brace : '{' {printf("JF R10, label%d\n",++current_scope);reset();}
-if_closed_brace : '}' {printf("label%d:\n",current_scope--);}
+ELSE_FINAL : ELSE '{' {printf("JT R10, label%d\n",++current_scope);open_brace();reset();}
+if_open_brace : '{' {printf("JF R10, label%d\n",++current_scope);open_brace();reset();}
+if_closed_brace : '}' {printf("label%d:\n",current_scope--);close_brace();}
 ;
+
 condition :
 			'(' condition ')' {;}
 		| condition OR high_p_condition {cond_lowp("OR");}
@@ -201,6 +210,10 @@ variable_declaration_statement:
 	|TYPE_FLT ID '=' math_expr	{ 	declare_initalize($2,2);}
 	|TYPE_CHR ID '=' CHAR_VALUE		{ 	declare_initalize($2,3);}
 	;
+
+open_brace: '{' { open_brace(); } ;
+close_brace: '}' { close_brace(); };
+
 //TODO edit to match normal declaration registers
 //TODO detect error when attempting to edit
 constant_declaration_statement:
@@ -213,6 +226,7 @@ constant_declaration_statement:
 																								if(declared[$3] == 0) {
 																									declared[$3] = 1;
 																									type[$3] = 3;
+																									scope[$3] = cscope;
 																									variabled_initialized[$3] = 1;
 																									printf("MOV %c,'%c'\n",$3+'a',$5+'a');
 
@@ -225,6 +239,7 @@ constant_declaration_statement:
 																								if(declared[$3] == 0) {
 																									declared[$3] = 1;
 																									type[$3] = 4;
+																									scope[$3] = cscope;
 																									variabled_initialized[$3] = 1;
 																								} else {
 																									printf("Syntax Error : %c is an already declared variable\n", $3 + 'a');
@@ -237,10 +252,6 @@ constant_declaration_statement:
 //Normal C-code
 int main(void)
 {
-	for (int i = 0; i < 50; i++)
-	{
-	    scopes_id[i] = i;
-	}
 	return yyparse();
 }
 void calc_lowp (char * op) {
@@ -306,6 +317,7 @@ void declare_only(int id,int type_)
 	if(declared[id] == 0) {
 	declared[id] = 1;
 	type[id] = type_;
+	scope[id] = cscope;
 	variabled_initialized[id] = 0;
 	is_constant[id] = 0;
 	} else {
@@ -333,6 +345,7 @@ void declare_const(int id, int _type)
 	if(declared[id] == 0) {
 			declared[id] = 1;
 			type[id] = _type;
+			scope[id] = cscope;
 			variabled_initialized[id] = 1;
 			is_constant[id] = 1;
 			if(is_first){
@@ -351,6 +364,7 @@ void declare_initalize(int id, int _type){
 	if(declared[id] == 0) {
 		declared[id] = 1;
 		type[id] = _type;
+		scope[id] = cscope;
 		variabled_initialized[id] = 1;
 		is_constant[id] = 0;
 		if(is_first){
@@ -382,4 +396,18 @@ int yyerror(char* s)
 int yywrap()
 {
   return(1);
+}
+
+void open_brace() {
+	cscope++;
+}
+
+void close_brace () {
+	for (int i = 0; i < 26; i++) {
+			if (scope[i] == cscope ) {
+				scope[i] = -1;
+				declared[i] = 0;
+			}
+	}
+	cscope--;
 }
