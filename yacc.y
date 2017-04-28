@@ -111,7 +111,7 @@ case_break: // CAN BE EMPTY
 			| BREAK ';' {printf("JMP label%d\n",current_scope);}
 default: DEFAULT ':' statement {;}
 
-do_while: DO '{' {printf("label:%d\n",++current_scope); open_brace();} statement '}' {close_brace();} WHILE '('condition')' {printf("JT R10,label%d\n",current_scope--);}
+do_while: DO '{' {printf("label:%d\n",new_scope()); open_brace();} statement '}' {close_brace();} WHILE '('condition')' {printf("JT R10,label%d\n",exit_scope());}
 for_loop:
 			FOR '(' assign_statement for_sep1 condition for_sep2 assign_statement ')'for_ob statement for_cb {;}
 for_sep1 : ';' {printf("MOV RF,0\n");
@@ -124,16 +124,16 @@ for_ob : '{' {printf("labelf%d:\n",nesting_arr[nesting_last_index]*3+2);
 							open_brace();
 							reset();}
 for_cb : '}' {printf("JMP labelf%d\n",exit_scope());
-							printf("labelf%d:\n",(nesting_arr[nesting_last_index]+1)*3+1);
+							printf("labelf%d:\n",(nesting_arr[nesting_last_index+1])*3+1);
 							close_brace();
 						}
 
 while_loop :
-			WHILE {printf("label%d:\n",++current_scope);} '(' condition ')' while_open_brace statement while_closed_brace {;}
+			WHILE {printf("label%d:\n",new_scope());} '(' condition ')' while_open_brace statement while_closed_brace {;}
 			;
-while_open_brace : '{' {printf("JF R10, label%d\n",++current_scope);reset();open_brace();}
-while_closed_brace : '}' {printf("JMP label%d\n",--current_scope);
-													printf("label%d:\n",++current_scope);reset();close_brace();}
+while_open_brace : '{' {printf("JF R10, label%d\n",nesting_arr[nesting_last_index]*3+1);reset();open_brace();}
+while_closed_brace : '}' {printf("JMP label%d\n",exit_scope());
+													printf("label%d:\n",(nesting_arr[nesting_last_index+1])*3+1);reset();close_brace();}
 if_statement :
 			IF '(' condition ')'if_open_brace statement if_closed_brace {;}
 			| IF '(' condition ')'if_open_brace statement if_closed_brace ELSE_FINAL statement if_closed_brace {;}

@@ -206,6 +206,7 @@ MOV x,R1
 
 JMP label1
 label2:
+
 ```
 
 ```c
@@ -259,6 +260,7 @@ MOV x,R1
 
 JMP label1
 label2:
+
 ```
 
 ```c
@@ -317,6 +319,28 @@ labelf7:
 
 JMP labelf3
 labelf4:
+```
+
+### Do While
+```c
+int x = 1 ;
+do{
+x = x + 1;
+} while(x < 10)
+
+
+label:3
+MOV R1, x
+MOV R2, 1
+ADD R0,R2,R1
+MOV x,R0
+
+MOV R1, x
+MOV R2, 10
+CMPL R10,R2,R1
+JT R10,label3
+
+
 ```
 
 ### Switch case
