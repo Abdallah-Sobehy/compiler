@@ -25,6 +25,13 @@ void cond_highp(char*);
 void switch_test ();
 void open_brace();
 void close_brace ();
+
+int new_scope();
+int exit_scope();
+int opened_scopes = 0;
+int nesting_arr[100];
+int nesting_last_index = -1;
+
 int exitFlag=0;
 int next_reg = 1; // The register number to be written in the next instruction
 int next_cond_reg = 11;
@@ -134,9 +141,9 @@ if_statement :
 			| IF '(' condition ')'if_open_brace statement if_closed_brace ELSE_FINAL statement if_closed_brace {;}
 			| IF '(' condition ')'if_open_brace statement if_closed_brace ELSE if_statement {;}
 			;
-ELSE_FINAL : ELSE '{' {printf("JT R10, label%d\n",++current_scope);open_brace();reset();}
-if_open_brace : '{' {printf("JF R10, label%d\n",++current_scope);open_brace();reset();}
-if_closed_brace : '}' {printf("label%d:\n",current_scope--);close_brace();}
+ELSE_FINAL : ELSE '{' {printf("JT R10, label%d\n",new_scope());open_brace();reset();}
+if_open_brace : '{' {printf("JF R10, label%d\n",new_scope());open_brace();reset();}
+if_closed_brace : '}' {printf("label%d:\n",exit_scope());close_brace();}
 ;
 
 condition :
@@ -145,7 +152,7 @@ condition :
 			| condition AND high_p_condition {cond_lowp("AND");}
 			| NOT condition {printf("NOT R10\n");}
 			| high_p_condition {;}
-			; // @ASobehy is this neccesary
+			;
 
 high_p_condition :
 			math_expr EQ math_expr {cond_highp("CMPE");}
@@ -154,7 +161,7 @@ high_p_condition :
 			| math_expr GT math_expr {cond_highp("CMPG");}
 			| math_expr LTE math_expr {cond_highp("CMPLE");}
 			| math_expr LT math_expr {cond_highp("CMPL");}
-			; // @ASobehy is this neccesary
+			;
 
 
 math_expr	:
@@ -402,4 +409,19 @@ void close_brace () {
 			}
 	}
 	cscope--;
+}
+
+
+int new_scope()
+{
+	opened_scopes ++;
+	nesting_last_index ++;
+	nesting_arr[nesting_last_index] = opened_scopes;
+	return opened_scopes;
+}
+int exit_scope()
+{
+	int tmp = nesting_arr[nesting_last_index];
+	nesting_last_index --;
+	return tmp;
 }

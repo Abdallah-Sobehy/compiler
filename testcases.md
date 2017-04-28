@@ -116,6 +116,65 @@ if (x == 0) {
 if ( x > 20) {
 int y = 1;
 }
+
+MOV R1, 0
+MOV x,R1
+
+MOV R1, 1
+MOV z,R1
+
+MOV R1, x
+MOV R2, 0
+CMPE R10,R2,R1
+JF R10, label1
+
+MOV R1, 1
+MOV x,R1
+
+MOV R1, x
+MOV R2, 1
+CMPE R10,R2,R1
+JF R10, label2
+
+MOV R1, 3
+MOV y,R1
+
+MOV R1, 2
+MOV x,R1
+
+label2:
+JT R10, label3
+
+MOV R1, 2
+MOV y,R1
+
+MOV R1, 10
+MOV x,R1
+
+label3:
+
+label1:
+MOV R1, z
+MOV R2, 0
+CMPE R10,R2,R1
+JF R10, label4
+
+MOV R1, 2
+MOV z,R1
+
+label4:
+
+MOV R1, x
+MOV R2, 20
+CMPG R10,R2,R1
+JF R10, label5
+
+MOV R1, 1
+MOV y,R1
+
+label5:
+
+
 ```
 
 ### While loops
