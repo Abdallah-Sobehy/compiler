@@ -246,7 +246,7 @@ MOV R2, 10
 CMPL R10,R2,R1
 JF R10, label2
 CMPE RF,0
-JT label3
+JT R10, label3
 MOV R1, i
 MOV R2, 1
 ADD R0,R2,R1
@@ -260,6 +260,62 @@ MOV x,R1
 JMP label1
 label2:
 ```
+int i;  
+for ( i = 0; i < 10; i = i + 1 ) {
+  int x = 1;
+  for ( x = 2; x < 5; x = x + 1 ) {
+    x = 15;
+  }
+}
+
+MOV R1, 0
+MOV i,R1
+MOV RF,0
+labelf3:
+
+MOV R1, i
+MOV R2, 10
+CMPL R10,R2,R1
+JF R10, labelf4
+CMPE RF,0
+JT R10, labelf5
+MOV R1, i
+MOV R2, 1
+ADD R0,R2,R1
+MOV i,R0
+labelf5:
+MOV RF,1
+
+MOV R1, 1
+MOV x,R1
+
+MOV R1, 2
+MOV x,R1
+MOV RF,0
+labelf6:
+
+MOV R1, x
+MOV R2, 5
+CMPL R10,R2,R1
+JF R10, labelf7
+CMPE RF,0
+JT R10, labelf8
+MOV R1, x
+MOV R2, 1
+ADD R0,R2,R1
+MOV x,R0
+labelf8:
+MOV RF,1
+
+MOV R1, 15
+MOV x,R1
+
+JMP labelf6
+labelf7:
+
+JMP labelf3
+labelf4:
+
 
 ### Switch case
 ```c

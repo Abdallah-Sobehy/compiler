@@ -117,16 +117,16 @@ do_while: DO '{' {printf("label:%d\n",++current_scope); open_brace();} statement
 for_loop:
 			FOR '(' assign_statement for_sep1 condition for_sep2 assign_statement ')'for_ob statement for_cb {;}
 for_sep1 : ';' {printf("MOV RF,0\n");
-								printf("label%d:\n",++current_scope);reset();}
-for_sep2 : ';' {printf("JF R10, label%d\n",++current_scope);
+								printf("labelf%d:\n",new_scope());reset();}
+for_sep2 : ';' {printf("JF R10, labelf%d\n",nesting_arr[nesting_last_index]*3+1);
 								printf("CMPE RF,0\n");
-								printf("JT label%d\n", ++current_scope);}
-for_ob : '{' {printf("label%d:\n",current_scope--);
+								printf("JT R10, labelf%d\n", nesting_arr[nesting_last_index]*3+2);}
+for_ob : '{' {printf("labelf%d:\n",nesting_arr[nesting_last_index]*3+2);
 							printf("MOV RF,1\n");
 							open_brace();
 							reset();}
-for_cb : '}' {printf("JMP label%d\n",--current_scope);
-							printf("label%d:\n",++current_scope);
+for_cb : '}' {printf("JMP labelf%d\n",exit_scope());
+							printf("labelf%d:\n",(nesting_arr[nesting_last_index]+1)*3+1);
 							close_brace();
 						}
 
@@ -429,11 +429,11 @@ int new_scope()
 	opened_scopes ++;
 	nesting_last_index ++;
 	nesting_arr[nesting_last_index] = opened_scopes;
-	return opened_scopes;
+	return opened_scopes*3;
 }
 int exit_scope()
 {
 	int tmp = nesting_arr[nesting_last_index];
 	nesting_last_index --;
-	return tmp;
+	return tmp*3;
 }
