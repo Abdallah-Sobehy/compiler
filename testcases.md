@@ -350,30 +350,36 @@ switch(x){
   case 5 : x = x + 2;
   case 8 : x = 1; break;
 }
+int x = 3;
+switch(x){
+  case 5 : x = x + 2;
+  case 8 : x = 1; break;
+}
 
 MOV R1, 3
 MOV x,R1
 
-MOV RS,x
+MOV R1, x
+MOV RS,R1
 MOV R1, 5
 CMPE R10,RS,R1
-JF R10,labelS1
+JF R10,label1a
 
 MOV R1, x
 MOV R2, 2
 ADD R0,R2,R1
 MOV x,R0
 
-labelS1:
+label1a:
 MOV R1, 8
 CMPE R10,RS,R1
-JF R10,labelS2
+JF R10,label1b
 
 MOV R1, 1
 MOV x,R1
 
-JMP 1
-labels2:
+JMP label1
+label1b:
 label1:
 
 ```

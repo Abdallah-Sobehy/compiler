@@ -25,6 +25,7 @@ void cond_highp(char*);
 void switch_test ();
 void open_brace();
 void close_brace ();
+void switch_expr();
 
 int new_scope();
 int exit_scope();
@@ -96,44 +97,44 @@ conditional_statement :
 			|switch_statement{;}
 			;
 switch_statement:
-			SWITCH '(' ID ')' {printf("MOV RS,%c\n",$3+'a');current_scope++;} switch_body
+			SWITCH '(' math_expr ')' {switch_expr();new_scope();} switch_body
 			;
 switch_body:
-			open_brace cases {printf("labelS%d:\nlabel%d:\n",next_case,current_scope--);} close_brace
-			|open_brace cases default {printf("labelS%d:\nlabel%d:\n",next_case,current_scope--);} close_brace
+			open_brace cases {int tmp = exit_scope(); printf("label%d%c:\nlabel%d:\n",tmp,'a'-1+next_case,tmp);} close_brace
+			|open_brace cases default {int tmp = exit_scope();printf("label%d%c:\nlabel%d:\n",tmp,'a'-1+next_case,tmp);} close_brace
 cases: CASE {if(next_case>0)
-								{printf("labelS%d:\n",next_case);}
+								{printf("label%d%c:\n",nesting_arr[nesting_last_index],'a'-1+next_case);}
 							next_case++;}
 							math_expr  {switch_test();}':' statement case_break{;}
 			|cases cases {;}
 			;
 case_break: // CAN BE EMPTY
-			| BREAK ';' {printf("JMP label%d\n",current_scope);}
+			| BREAK ';' {printf("JMP label%d\n",nesting_arr[nesting_last_index]);}
 default: DEFAULT ':' statement {;}
 
 do_while: DO '{' {printf("label:%d\n",new_scope()); open_brace();} statement '}' {close_brace();} WHILE '('condition')' {printf("JT R10,label%d\n",exit_scope());}
 for_loop:
 			FOR '(' assign_statement for_sep1 condition for_sep2 assign_statement ')'for_ob statement for_cb {;}
 for_sep1 : ';' {printf("MOV RF,0\n");
-								printf("labelf%d:\n",new_scope());reset();}
-for_sep2 : ';' {printf("JF R10, labelf%d\n",nesting_arr[nesting_last_index]*3+1);
+								printf("label%d:\n",new_scope());reset();}
+for_sep2 : ';' {printf("JF R10, label%da\n",nesting_arr[nesting_last_index]);
 								printf("CMPE RF,0\n");
-								printf("JT R10, labelf%d\n", nesting_arr[nesting_last_index]*3+2);}
-for_ob : '{' {printf("labelf%d:\n",nesting_arr[nesting_last_index]*3+2);
+								printf("JT R10, label%db\n", nesting_arr[nesting_last_index]);}
+for_ob : '{' {printf("label%db:\n",nesting_arr[nesting_last_index]);
 							printf("MOV RF,1\n");
 							open_brace();
 							reset();}
-for_cb : '}' {printf("JMP labelf%d\n",exit_scope());
-							printf("labelf%d:\n",(nesting_arr[nesting_last_index+1])*3+1);
+for_cb : '}' {printf("JMP label%d\n",nesting_arr[nesting_last_index]);
+							printf("label%da:\n",exit_scope());
 							close_brace();
 						}
 
 while_loop :
 			WHILE {printf("label%d:\n",new_scope());} '(' condition ')' while_open_brace statement while_closed_brace {;}
 			;
-while_open_brace : '{' {printf("JF R10, label%d\n",nesting_arr[nesting_last_index]*3+1);reset();open_brace();}
-while_closed_brace : '}' {printf("JMP label%d\n",exit_scope());
-													printf("label%d:\n",(nesting_arr[nesting_last_index+1])*3+1);reset();close_brace();}
+while_open_brace : '{' {printf("JF R10, label%da\n",nesting_arr[nesting_last_index]);reset();open_brace();}
+while_closed_brace : '}' {printf("JMP label%d\n",nesting_arr[nesting_last_index]);
+													printf("label%da:\n",exit_scope());reset();close_brace();}
 if_statement :
 			IF '(' condition ')'if_open_brace statement if_closed_brace {;}
 			| IF '(' condition ')'if_open_brace statement if_closed_brace ELSE_FINAL statement if_closed_brace {;}
@@ -315,7 +316,7 @@ void switch_test () {
 			printf("CMPE R10,RS,R0\n", --next_reg);
 		}
 		}
-		printf("JF R10,labelS%d\n",next_case);
+		printf("JF R10,label%d%c\n",nesting_arr[nesting_last_index],'a'-1+next_case);
 		reset();
 }
 void declare_only(int id,int type_)
@@ -349,6 +350,18 @@ void assign_only(int id){
 		printf("Syntax Error : %c is not declared\n", id + 'a');
 	}
 }
+
+void switch_expr(){
+	if(is_first){
+		printf("MOV RS,R%d\n",--next_reg);
+		}else{
+			if(after_hp)
+				printf("MOV RS,R4\n");
+			else
+				printf("MOV RS,R0\n");
+		}
+	}
+
 void declare_const(int id, int _type)
 {
 	if(declared[id] == 0) {
@@ -427,11 +440,11 @@ int new_scope()
 	opened_scopes ++;
 	nesting_last_index ++;
 	nesting_arr[nesting_last_index] = opened_scopes;
-	return opened_scopes*3;
+	return opened_scopes;
 }
 int exit_scope()
 {
 	int tmp = nesting_arr[nesting_last_index];
 	nesting_last_index --;
-	return tmp*3;
+	return tmp;
 }
