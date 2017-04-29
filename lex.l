@@ -49,6 +49,7 @@ ALNUM [0-9a-zA-Z]
 "char"			return TYPE_CHR;
 "const"   		return TYPE_CONST;
 "exit"			return exit_command;
+"symbol_table" return show_symbol_table;
 
 [ \t\n]+        ;       /* ignore whitespace */
 

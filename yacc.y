@@ -26,6 +26,8 @@ void switch_test ();
 void open_brace();
 void close_brace ();
 void switch_expr();
+void print_symbol_table();
+char * get_type(int type);
 
 int new_scope();
 int exit_scope();
@@ -47,14 +49,14 @@ int scope[26]; // a scope number for each variable
 int cscope = 0;
 int next_case = 0;
 int current_scope = 0;
-int variabled_initialized[26];
+int variable_initialized[26];
 int type[26];
 %}
 // definitions
 %union {int INTGR; char * STRNG; float FLT; char CHR;}
 %start statement
 %token IF ELSE ELSEIF FOR WHILE SWITCH CASE DO BREAK DEFAULT
-%token TYPE_INT TYPE_FLT TYPE_STR TYPE_CHR TYPE_CONST
+%token TYPE_INT TYPE_FLT TYPE_STR TYPE_CHR TYPE_CONST show_symbol_table
 %token <INTGR> ID
 %token <INTGR> NUM
 %token <FLT> FLOATING_NUM
@@ -79,6 +81,7 @@ statement	: variable_declaration_statement ';' {reset();}
 			| conditional_statement {reset();}
 			| math_expr ';' {reset();}
 			| exit_command ';' {exit(EXIT_SUCCESS);}
+			| show_symbol_table ';' {print_symbol_table();}
 			| statement variable_declaration_statement ';' {reset();}
 			| statement assign_statement ';' {reset();}
 			| statement constant_declaration_statement ';' {reset();}
@@ -87,6 +90,7 @@ statement	: variable_declaration_statement ';' {reset();}
 			| statement exit_command ';' {exit(EXIT_SUCCESS);}
 			| open_brace statement close_brace statement {;}
 			| statement open_brace statement close_brace {;}
+			| statement show_symbol_table ';' {print_symbol_table();}
 			;
 
 conditional_statement :
@@ -192,7 +196,7 @@ math_element:	NUM			  				{$$=$1;
 																printf("MOV R%d, %f\n",next_reg++,$1);}
 				| ID 										{$$=$1;
 																	if(declared[$1] == 1){
-																		if(variabled_initialized[$1] == 1){
+																		if(variable_initialized[$1] == 1){
 																			$$=$1;
 																			printf("MOV R%d, %c\n",next_reg++,$1+'a');
 																		} else {
@@ -219,7 +223,7 @@ variable_declaration_statement:
 																	type[$2] = 3;
 																	scope[$2] = cscope;
 																	is_constant[$2] = 0;
-																	variabled_initialized[$2] = 1;
+																	variable_initialized[$2] = 1;
 																	printf("MOV %c,'%c'\n",$2+'a',$4+'a');
 
 																} else {
@@ -245,7 +249,7 @@ constant_declaration_statement:
 																									type[$3] = 3;
 																									scope[$3] = cscope;
 																									is_constant[$3] = 1;
-																									variabled_initialized[$3] = 1;
+																									variable_initialized[$3] = 1;
 																									printf("MOV %c,'%c'\n",$3+'a',$5+'a');
 
 																								} else {
@@ -260,6 +264,33 @@ constant_declaration_statement:
 int main(void)
 {
 	return yyparse();
+}
+void print_symbol_table()
+{
+	printf("Symbol Table:\n=============\n");
+	printf("Symbol\t\tType\t\tInitialized\t\tConstant\t\tScope\t\t\n");
+	for (int i = 0 ; i < 26 ; i ++){
+		if(declared[i] == 1)
+		{
+			printf("%c\t\t%s\t\t",i+'a',get_type(type[i]));
+			if(variable_initialized[i] == 1)
+				printf("true\t\t\t");
+			else printf("false\t\t\t");
+			if(is_constant[i] == 1)
+				printf("true\t\t\t");
+			else printf("false\t\t\t");
+
+			printf("%d\n", scope[i]);
+		}
+	}
+}
+char * get_type(int type){
+	if(type == 1)
+		return "int";
+	if(type == 2)
+		return "float";
+	if(type == 3)
+		return "char";
 }
 void calc_lowp (char * op) {
 	/*$$ = $1 + $3;*/
@@ -325,7 +356,7 @@ void declare_only(int id,int type_)
 	declared[id] = 1;
 	type[id] = type_;
 	scope[id] = cscope;
-	variabled_initialized[id] = 0;
+	variable_initialized[id] = 0;
 	is_constant[id] = 0;
 	} else {
 		printf("Syntax Error : %c is an already declared variable\n", id + 'a');
@@ -334,7 +365,7 @@ void declare_only(int id,int type_)
 void assign_only(int id){
 	if(declared[id] == 1) {
 		if (is_constant[id] == 0) {
-			variabled_initialized[id] = 1;
+			variable_initialized[id] = 1;
 			if(is_first){
 				printf("MOV %c,R%d\n",id+'a',--next_reg);
 				}else{
@@ -368,7 +399,7 @@ void declare_const(int id, int _type)
 			declared[id] = 1;
 			type[id] = _type;
 			scope[id] = cscope;
-			variabled_initialized[id] = 1;
+			variable_initialized[id] = 1;
 			is_constant[id] = 1;
 			if(is_first){
 				printf("MOV %c,R%d\n",id+'a',--next_reg);
@@ -387,7 +418,7 @@ void declare_initalize(int id, int _type){
 		declared[id] = 1;
 		type[id] = _type;
 		scope[id] = cscope;
-		variabled_initialized[id] = 1;
+		variable_initialized[id] = 1;
 		is_constant[id] = 0;
 		if(is_first){
 			printf("MOV %c,R%d\n",id+'a',--next_reg);

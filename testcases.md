@@ -426,3 +426,34 @@ MOV z,R1
 labelS2:
 label1:
 ```
+
+### Symbol table printing
+
+```c
+
+int x = 3;
+const char y ='l';
+float z;
+
+if(x ==8){
+	float m;
+	symbol_table
+
+MOV R1, 3
+MOV x,R1
+MOV y,'l'
+
+MOV R1, x
+MOV R2, 8
+CMPE R10,R2,R1
+JF R10, label1
+
+Symbol Table:
+=============
+Symbol		Type		Initialized		Constant		Scope		
+m		float		false			false			1
+x		int		true			false			0
+y		char		true			true			0
+z		float		false			false			0
+
+```

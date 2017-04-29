@@ -34,3 +34,5 @@ Yousra Samir
     - [ ] [optional] Addition of type conversion quadruples to coupe with operators semantic requirements, i.e. converting integer to real, etc.
     - [ ] Variables used before being initialized and unused variables.
 - [ ] Implement a simple GUI.
+
+Phases Delivery schedule: https://docs.google.com/document/d/1yKnRmjnohVbQjooCrwVUGWwnZnTipGHUCsdW_T_MNoM/edit
